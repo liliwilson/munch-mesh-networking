@@ -9,7 +9,6 @@ class Arena:
     def __init__(self, filename: str) -> None:
         """
         Initialize an arena given a file containing: 
-            0. arena size
             1. a mapping of node types to their capabilities
             2. nodes of each type (identified by MAC address), and their locations as tuples
             3. rules for which types of nodes are allowed to connect to each other

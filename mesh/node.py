@@ -35,13 +35,13 @@ class Node:
         """
         pass
 
-    def send_from_queue(self) -> None:
+    def send_from_queue(self, timestep: int) -> None: 
         """
         Dequeues the next packet and sends the packet to its next hop. 
         """
         pass
 
-    def receive_packet(self, packet: Packet) -> None:
+    def receive_packet(self, packet: Packet, timestep: int) -> None:
         """
         Receives a packet and adds the packet to own queue.
 
