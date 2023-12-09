@@ -36,3 +36,9 @@ class Arena:
         Send a stream of data from source to destination, returns a float containing how many packets were received by dest.
         """
         pass
+
+    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> typing.Dict[str, float]:
+        """
+        Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
+        """
+        pass
