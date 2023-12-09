@@ -38,6 +38,3 @@ At each timestep, the following will take place:
 4. All remaining un-collided senders will then be triggered to send their enqueued packet to its nexthop, determined using a minimum-path routing protocol with the DFS results from the beginning. These senders will also all be moved to the back of the arena's node list, to try to enforce some of the MAC fairness that the protocol normally manages.
 
 We also need some way to make sure that senders generate_packets to a random receiver at different timesteps. We plan to incorporate some randomness here to decide when to randomly generate a packet.
-
-
-<!-- question -- is it safe to assume each packet takes one timestep to be transmitted????? like prolly right -->
