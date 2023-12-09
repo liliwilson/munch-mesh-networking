@@ -3,9 +3,10 @@ from .link import Link
 from .node import Node
 from .packet import Packet
 
+
 class Arena:
 
-    def __init__(self, filename: str):
+    def __init__(self, filename: str) -> None:
         """
         Initialize an arena given a file containing: 
             0. arena size
@@ -24,7 +25,7 @@ class Arena:
         """
         pass
 
-    def send_packet(self, src_node: str, dest_node: str):
+    def send_packet(self, src_node: str, dest_node: str) -> None:
         """
         Initiates a packet send from a source node, to a given a destination node.
         """
@@ -35,5 +36,3 @@ class Arena:
         Send a stream of data from source to destination, returns a float containing how many packets were received by dest.
         """
         pass
-
-
