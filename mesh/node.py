@@ -35,7 +35,7 @@ class Node:
         """
         pass
 
-    def send_from_queue(self, timestep: int) -> None: 
+    def send_from_queue(self, timestep: int) -> None:
         """
         Dequeues the next packet and sends the packet to its next hop. 
         """
@@ -46,5 +46,13 @@ class Node:
         Receives a packet and adds the packet to own queue.
 
         If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
+        """
+        pass
+
+    # Testing
+
+    def is_neighbor(self, other: str) -> bool:
+        """
+        Given the MAC address of another node, returns True iff there is a link between self and other.
         """
         pass
