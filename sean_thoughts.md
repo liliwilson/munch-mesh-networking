@@ -21,3 +21,7 @@ I also added some functions various classes (labelled them below testing!).
 ## WTF IS GOING ON WITH THE IMPORTS WTFFFFFFF
 
 OK the directory structure is not the greatest, but I have no clue how to fix so yeah....
+
+## TYPING STUFF
+
+We can't do typing.List[str] -- it needs to be list[str]
