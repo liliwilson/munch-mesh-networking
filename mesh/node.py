@@ -17,7 +17,7 @@ class Node:
         """
         pass
 
-    def set_path(self, path: typing.List[str]) -> None:
+    def set_path(self, path: list[str]) -> None:
         """
         Sets the MAC address path from self to the supernode.
         """
