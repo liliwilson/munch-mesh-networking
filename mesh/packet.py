@@ -10,3 +10,15 @@ class Packet:
         Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.
         """
         pass
+
+    def get_path(self) -> list[str]:
+        """
+        Gets the packet's path to destination.
+        """
+        return []
+
+    def get_is_request(self) -> bool:
+        """
+        Returns True iff the packet is a request packet.
+        """
+        return False

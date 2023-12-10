@@ -13,6 +13,8 @@ Can parse the following complexities:
 
 1. Links existing based on hierarchy classes: No link should exist, some link should exist.
 
+2. Links based on distance: Some link should exist, no link should exist
+
 ### Partition on Step/Simulate
 
 4. Step/simulate works

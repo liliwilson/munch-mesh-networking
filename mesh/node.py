@@ -23,9 +23,11 @@ class Node:
         """
         pass
 
-    def generate_packet(self, dst: str) -> None:
+    def generate_packet(self, dst: str) -> int:
         """
         Creates a generated packet with final destination dst and enqueues it.
+
+        Outputs the packet_id of the packet generated.
         """
         pass
 
@@ -35,7 +37,7 @@ class Node:
         """
         pass
 
-    def send_from_queue(self, timestep: int) -> None:
+    def send_from_queue(self, timestep: int) -> Packet:
         """
         Dequeues the next packet and sends the packet to its next hop. 
         """
@@ -56,3 +58,15 @@ class Node:
         Given the MAC address of another node, returns True iff there is a link between self and other.
         """
         pass
+
+    def get_queue_state(self) -> list[Packet]:
+        """
+        Returns an ordered list of packets, representing self's current queue.
+        """
+        return []
+
+    def get_packets_received(self) -> int:
+        """
+        Returns the number of packets that this node has received
+        """
+        return 0

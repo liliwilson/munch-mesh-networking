@@ -1,0 +1,21 @@
+{
+  "hierarchies": {
+    "type1": {
+      "strength": 2,
+      "nodes": [
+        {
+          "n1": { "x": 0, "y": 0 }
+        }
+      ]
+    },
+    "type2": {
+      "strength": 4,
+      "nodes": [
+        {
+          "n2": { "x": 1, "y": 1 }
+        }
+      ]
+    }
+  },
+  "rules": [["type1", "type2"]]
+}
