@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class Packet:
 
     def __init__(self, payload_size: int, packet_id: int, is_request: bool, path_to_dst: list[str]) -> None:
@@ -29,3 +32,19 @@ class Packet:
         Returns self's packet_id.
         """
         return self.packet_id
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Returns True iff two packets are equal
+        """
+        if not isinstance(other, Packet):
+            return False
+        if not self.payload_size == other.payload_size:
+            return False
+        if not self.packet_id == other.packet_id:
+            return False
+        if not self.is_request == other.is_request:
+            return False
+        if not self.path_to_dst == other.path_to_dst:
+            return False
+        return True
