@@ -46,3 +46,30 @@ def test_two_nodes() -> None:
     arena.run()  # TODO: change this to have the parameters required
 
     return
+
+
+def test_generating_links() -> None:
+    """
+    Tests all of the partitions of whether a link will be established between two nodes.
+    """
+    arena = Arena('./testing_auxiliaries/test_arenas/all-link-partitions.json')
+    node_mapping = arena.get_nodes()
+    for n in ['n1', 'n2', 'n3', 'n4']:
+        assert n in node_mapping, 'expected ' + n + ' to be in node_mapping'
+
+    links = [('n1', 'n2')]
+    for node1, node2 in links:
+        assert arena.can_link(node1, node2), node1 + \
+            ' and ' + node2 + ' should be linked'
+        assert arena.can_link(node2, node1), node2 + \
+            ' and ' + node1 + ' should be linked'
+
+    no_links = [('n1', 'n3'), ('n1', 'n4'), ('n2', 'n3'),
+                ('n2', 'n4'), ('n3', 'n4')]
+    for node1, node2 in no_links:
+        assert not arena.can_link(node1, node2), node1 + \
+            ' and ' + node2 + ' should not be linked'
+        assert not arena.can_link(node2, node1), node2 + \
+            ' and ' + node1 + ' should not be linked'
+
+    return
