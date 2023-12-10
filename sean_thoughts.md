@@ -17,3 +17,7 @@ I think it'd be easier to just have a maximum distance a node can reliably trans
 Partitions in [`testing_strategy.md`](./mesh/tests/testing_strategy.md).
 
 I also added some functions various classes (labelled them below testing!).
+
+## WTF IS GOING ON WITH THE IMPORTS WTFFFFFFF
+
+OK the directory structure is not the greatest, but I have no clue how to fix so yeah....

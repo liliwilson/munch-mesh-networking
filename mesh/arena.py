@@ -35,3 +35,10 @@ class Arena:
         Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
         """
         pass
+
+    # Testing
+    def get_nodes(self) -> set[str]:
+        """
+        Returns all nodes given to this arena
+        """
+        return set()
