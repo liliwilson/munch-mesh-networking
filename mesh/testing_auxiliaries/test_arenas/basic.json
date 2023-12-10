@@ -1,10 +1,13 @@
 {
   "hierarchies": {
-    "type1": [
-      {
-        "n1": [0, 0]
-      }
-    ]
+    "type1": {
+      "strength": 5,
+      "nodes": [
+        {
+          "n1": [0, 0]
+        }
+      ]
+    }
   },
   "rules": []
 }
