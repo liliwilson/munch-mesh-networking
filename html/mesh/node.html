@@ -45,21 +45,35 @@ class Node:
         &#34;&#34;&#34;
         pass
 
+    def set_path(self, path: typing.List[str]) -&gt; None:
+        &#34;&#34;&#34;
+        Sets the MAC address path from self to the supernode.
+        &#34;&#34;&#34;
+        pass
+
     def generate_packet(self, dst: str) -&gt; None:
         &#34;&#34;&#34;
         Creates a generated packet with final destination dst and enqueues it.
         &#34;&#34;&#34;
         pass
 
-    def send_from_queue(self) -&gt; None:
+    def get_next_destination(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns the MAC address of the nexthop of the packet at the front of the queue.
+        &#34;&#34;&#34;
+        pass
+
+    def send_from_queue(self, timestep: int) -&gt; None: 
         &#34;&#34;&#34;
         Dequeues the next packet and sends the packet to its next hop. 
         &#34;&#34;&#34;
         pass
 
-    def receive_packet(self, packet: Packet) -&gt; None:
+    def receive_packet(self, packet: Packet, timestep: int) -&gt; None:
         &#34;&#34;&#34;
         Receives a packet and adds the packet to own queue.
+
+        If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -97,21 +111,35 @@ class Node:
         &#34;&#34;&#34;
         pass
 
+    def set_path(self, path: typing.List[str]) -&gt; None:
+        &#34;&#34;&#34;
+        Sets the MAC address path from self to the supernode.
+        &#34;&#34;&#34;
+        pass
+
     def generate_packet(self, dst: str) -&gt; None:
         &#34;&#34;&#34;
         Creates a generated packet with final destination dst and enqueues it.
         &#34;&#34;&#34;
         pass
 
-    def send_from_queue(self) -&gt; None:
+    def get_next_destination(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns the MAC address of the nexthop of the packet at the front of the queue.
+        &#34;&#34;&#34;
+        pass
+
+    def send_from_queue(self, timestep: int) -&gt; None: 
         &#34;&#34;&#34;
         Dequeues the next packet and sends the packet to its next hop. 
         &#34;&#34;&#34;
         pass
 
-    def receive_packet(self, packet: Packet) -&gt; None:
+    def receive_packet(self, packet: Packet, timestep: int) -&gt; None:
         &#34;&#34;&#34;
         Receives a packet and adds the packet to own queue.
+
+        If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -149,24 +177,43 @@ class Node:
     pass</code></pre>
 </details>
 </dd>
-<dt id="mesh.node.Node.receive_packet"><code class="name flex">
-<span>def <span class="ident">receive_packet</span></span>(<span>self, packet: <a title="mesh.packet.Packet" href="packet.html#mesh.packet.Packet">Packet</a>) ‑> None</span>
+<dt id="mesh.node.Node.get_next_destination"><code class="name flex">
+<span>def <span class="ident">get_next_destination</span></span>(<span>self) ‑> str</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Receives a packet and adds the packet to own queue.</p></div>
+<div class="desc"><p>Returns the MAC address of the nexthop of the packet at the front of the queue.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def receive_packet(self, packet: Packet) -&gt; None:
+<pre><code class="python">def get_next_destination(self) -&gt; str:
+    &#34;&#34;&#34;
+    Returns the MAC address of the nexthop of the packet at the front of the queue.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.receive_packet"><code class="name flex">
+<span>def <span class="ident">receive_packet</span></span>(<span>self, packet: <a title="mesh.packet.Packet" href="packet.html#mesh.packet.Packet">Packet</a>, timestep: int) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Receives a packet and adds the packet to own queue.</p>
+<p>If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def receive_packet(self, packet: Packet, timestep: int) -&gt; None:
     &#34;&#34;&#34;
     Receives a packet and adds the packet to own queue.
+
+    If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
     &#34;&#34;&#34;
     pass</code></pre>
 </details>
 </dd>
 <dt id="mesh.node.Node.send_from_queue"><code class="name flex">
-<span>def <span class="ident">send_from_queue</span></span>(<span>self) ‑> None</span>
+<span>def <span class="ident">send_from_queue</span></span>(<span>self, timestep: int) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Dequeues the next packet and sends the packet to its next hop.</p></div>
@@ -174,9 +221,25 @@ class Node:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def send_from_queue(self) -&gt; None:
+<pre><code class="python">def send_from_queue(self, timestep: int) -&gt; None: 
     &#34;&#34;&#34;
     Dequeues the next packet and sends the packet to its next hop. 
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.set_path"><code class="name flex">
+<span>def <span class="ident">set_path</span></span>(<span>self, path: List[str]) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Sets the MAC address path from self to the supernode.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_path(self, path: typing.List[str]) -&gt; None:
+    &#34;&#34;&#34;
+    Sets the MAC address path from self to the supernode.
     &#34;&#34;&#34;
     pass</code></pre>
 </details>
@@ -204,8 +267,10 @@ class Node:
 <ul class="">
 <li><code><a title="mesh.node.Node.add_link" href="#mesh.node.Node.add_link">add_link</a></code></li>
 <li><code><a title="mesh.node.Node.generate_packet" href="#mesh.node.Node.generate_packet">generate_packet</a></code></li>
+<li><code><a title="mesh.node.Node.get_next_destination" href="#mesh.node.Node.get_next_destination">get_next_destination</a></code></li>
 <li><code><a title="mesh.node.Node.receive_packet" href="#mesh.node.Node.receive_packet">receive_packet</a></code></li>
 <li><code><a title="mesh.node.Node.send_from_queue" href="#mesh.node.Node.send_from_queue">send_from_queue</a></code></li>
+<li><code><a title="mesh.node.Node.set_path" href="#mesh.node.Node.set_path">set_path</a></code></li>
 </ul>
 </li>
 </ul>

@@ -15,5 +15,7 @@ class Link:
     def transmit(self, packet: Packet, source: str) -> bool:
         """
         Given a packet and a source MAC address, returns True iff the destination node receives the packet.
+
+        Determined based on distance between nodes and strengths of the nodes.
         """
         pass

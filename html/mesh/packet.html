@@ -31,9 +31,11 @@
 
 class Packet:
 
-    def __init__(self, dst_node: str, payload_size: int) -&gt; None:
+    def __init__(self, payload_size: int, packet_id: int, is_request: bool, path_to_dst: typing.List[str]) -&gt; None:
         &#34;&#34;&#34;
-        Creates a packet given a destination MAC address and a packet size in bytes.
+        Creates a packet given a path to the destination MAC address and a packet size in bytes.
+
+        Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -49,19 +51,22 @@ class Packet:
 <dl>
 <dt id="mesh.packet.Packet"><code class="flex name class">
 <span>class <span class="ident">Packet</span></span>
-<span>(</span><span>dst_node: str, payload_size: int)</span>
+<span>(</span><span>payload_size: int, packet_id: int, is_request: bool, path_to_dst: List[str])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Creates a packet given a destination MAC address and a packet size in bytes.</p></div>
+<div class="desc"><p>Creates a packet given a path to the destination MAC address and a packet size in bytes.</p>
+<p>Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Packet:
 
-    def __init__(self, dst_node: str, payload_size: int) -&gt; None:
+    def __init__(self, payload_size: int, packet_id: int, is_request: bool, path_to_dst: typing.List[str]) -&gt; None:
         &#34;&#34;&#34;
-        Creates a packet given a destination MAC address and a packet size in bytes.
+        Creates a packet given a path to the destination MAC address and a packet size in bytes.
+
+        Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>

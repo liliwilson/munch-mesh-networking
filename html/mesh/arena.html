@@ -37,7 +37,6 @@ class Arena:
     def __init__(self, filename: str) -&gt; None:
         &#34;&#34;&#34;
         Initialize an arena given a file containing: 
-            0. arena size
             1. a mapping of node types to their capabilities
             2. nodes of each type (identified by MAC address), and their locations as tuples
             3. rules for which types of nodes are allowed to connect to each other
@@ -59,9 +58,9 @@ class Arena:
         &#34;&#34;&#34;
         pass
 
-    def send_data_stream(self, src_node: str, dest_node: str) -&gt; float:
+    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -&gt; typing.Dict[str, float]:
         &#34;&#34;&#34;
-        Send a stream of data from source to destination, returns a float containing how many packets were received by dest.
+        Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -81,7 +80,6 @@ class Arena:
 </code></dt>
 <dd>
 <div class="desc"><p>Initialize an arena given a file containing:
-0. arena size
 1. a mapping of node types to their capabilities
 2. nodes of each type (identified by MAC address), and their locations as tuples
 3. rules for which types of nodes are allowed to connect to each other</p></div>
@@ -94,7 +92,6 @@ class Arena:
     def __init__(self, filename: str) -&gt; None:
         &#34;&#34;&#34;
         Initialize an arena given a file containing: 
-            0. arena size
             1. a mapping of node types to their capabilities
             2. nodes of each type (identified by MAC address), and their locations as tuples
             3. rules for which types of nodes are allowed to connect to each other
@@ -116,9 +113,9 @@ class Arena:
         &#34;&#34;&#34;
         pass
 
-    def send_data_stream(self, src_node: str, dest_node: str) -&gt; float:
+    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -&gt; typing.Dict[str, float]:
         &#34;&#34;&#34;
-        Send a stream of data from source to destination, returns a float containing how many packets were received by dest.
+        Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
         &#34;&#34;&#34;
         pass</code></pre>
 </details>
@@ -145,22 +142,6 @@ that, given their power capabilities, they can reach one another.</p></div>
     pass</code></pre>
 </details>
 </dd>
-<dt id="mesh.arena.Arena.send_data_stream"><code class="name flex">
-<span>def <span class="ident">send_data_stream</span></span>(<span>self, src_node: str, dest_node: str) ‑> float</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Send a stream of data from source to destination, returns a float containing how many packets were received by dest.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def send_data_stream(self, src_node: str, dest_node: str) -&gt; float:
-    &#34;&#34;&#34;
-    Send a stream of data from source to destination, returns a float containing how many packets were received by dest.
-    &#34;&#34;&#34;
-    pass</code></pre>
-</details>
-</dd>
 <dt id="mesh.arena.Arena.send_packet"><code class="name flex">
 <span>def <span class="ident">send_packet</span></span>(<span>self, src_node: str, dest_node: str) ‑> None</span>
 </code></dt>
@@ -173,6 +154,22 @@ that, given their power capabilities, they can reach one another.</p></div>
 <pre><code class="python">def send_packet(self, src_node: str, dest_node: str) -&gt; None:
     &#34;&#34;&#34;
     Initiates a packet send from a source node, to a given a destination node.
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+</dd>
+<dt id="mesh.arena.Arena.simulate"><code class="name flex">
+<span>def <span class="ident">simulate</span></span>(<span>self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) ‑> Dict[str, float]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -&gt; typing.Dict[str, float]:
+    &#34;&#34;&#34;
+    Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
     &#34;&#34;&#34;
     pass</code></pre>
 </details>
@@ -199,8 +196,8 @@ that, given their power capabilities, they can reach one another.</p></div>
 <h4><code><a title="mesh.arena.Arena" href="#mesh.arena.Arena">Arena</a></code></h4>
 <ul class="">
 <li><code><a title="mesh.arena.Arena.can_link" href="#mesh.arena.Arena.can_link">can_link</a></code></li>
-<li><code><a title="mesh.arena.Arena.send_data_stream" href="#mesh.arena.Arena.send_data_stream">send_data_stream</a></code></li>
 <li><code><a title="mesh.arena.Arena.send_packet" href="#mesh.arena.Arena.send_packet">send_packet</a></code></li>
+<li><code><a title="mesh.arena.Arena.simulate" href="#mesh.arena.Arena.simulate">simulate</a></code></li>
 </ul>
 </li>
 </ul>
