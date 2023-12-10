@@ -128,7 +128,7 @@ def test_collision() -> None:
     n1_first = n1.get_queue_state()[0]
     arena.send_packet('n3', 'n2')
     n3_first = n3.get_queue_state()[0]
-    arena.run()  # should have a collision, so no queues are changes
+    arena.run()  # should have a collision, so no queues are changed
 
     assert len(n1.get_queue_state()
                ) == 2, 'expected length of n1\'s queue to be 2'
@@ -136,6 +136,37 @@ def test_collision() -> None:
                ) == 1, 'expected length of n3\'s queue to be 1'
     assert n1.get_queue_state()[
         0] == n1_first, 'expected to the same packet to be at the head of n1\'s queue'
+    assert n3.get_queue_state()[
+        0] == n3_first, 'expected to the same packet to be at the head of n3\'s queue'
+
+
+def test_hidden_terminal() -> None:
+    """
+    Tests hidden terminal behavior
+    """
+    arena = Arena("./testing_auxiliaries/test_arenas/hidden-terminal.json")
+    node_mapping = arena.get_nodes()
+    for i in range(1, 4):
+        n = 'n' + str(i)
+        assert n in node_mapping, 'expected ' + n + ' to be in node_mapping'
+
+    n1, n3 = node_mapping['n1'], node_mapping['n3']
+
+    arena.send_packet('n1', 'n2')
+    arena.send_packet('n1', 'n2')
+    n1_first = n1.get_queue_state()[0]
+    arena.send_packet('n3', 'n2')
+    n3_first = n3.get_queue_state()[0]
+    arena.run()  # should have a hidden terminal instance occur, so no queues are changed
+
+    assert len(n1.get_queue_state()
+               ) == 2, 'expected length of n1\'s queue to be 2'
+    assert len(n3.get_queue_state()
+               ) == 1, 'expected length of n3\'s queue to be 1'
+    assert n1.get_queue_state()[
+        0] == n1_first, 'expected to the same packet to be at the head of n1\'s queue'
+    assert n3.get_queue_state()[
+        0] == n3_first, 'expected to the same packet to be at the head of n3\'s queue'
 
 
 def test_packet() -> None:
