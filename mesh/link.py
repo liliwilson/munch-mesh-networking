@@ -1,12 +1,11 @@
 import typing
 import random
-from .node import Node
 from .packet import Packet
 
 
 class Link:
 
-    def __init__(self, node1: Node, node2: Node) -> None:
+    def __init__(self, node1: typing.Any, node2: typing.Any) -> None:
         """
         Creates a link object between node1 and node2. 
         """

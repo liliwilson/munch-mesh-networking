@@ -6,7 +6,7 @@ def test_parse() -> None:
     """
     Tests parsing of a simple one-node arena
     """
-    arena = Arena("./testing_auxiliaries/test_arenas/basic.json")
+    arena = Arena("./test_mesh/test_arenas/basic.json")
     assert 'n1' in arena.get_nodes(), "expected 'n1' to be part of the arena"
     return
 
@@ -15,7 +15,7 @@ def test_two_nodes() -> None:
     """
     Tests a two-node network where the nodes should be linked.
     """
-    arena = Arena("./testing_auxiliaries/test_arenas/two-nodes.json")
+    arena = Arena("./test_mesh/test_arenas/two-nodes.json")
     node_mapping = arena.get_nodes()
     assert 'n1' in node_mapping and 'n2' in node_mapping, "Wrong nodes in network"
 
@@ -52,7 +52,7 @@ def test_generating_links() -> None:
     """
     Tests all of the partitions of whether a link will be established between two nodes.
     """
-    arena = Arena('./testing_auxiliaries/test_arenas/all-link-partitions.json')
+    arena = Arena('./test_mesh/test_arenas/all-link-partitions.json')
     node_mapping = arena.get_nodes()
     for n in ['n1', 'n2', 'n3', 'n4']:
         assert n in node_mapping, 'expected ' + n + ' to be in node_mapping'
@@ -79,7 +79,7 @@ def test_dfs() -> None:
     """
     Tests that the routing protocol is working correctly
     """
-    arena = Arena('./testing_auxiliaries/test_arenas/dfs.json')
+    arena = Arena('./test_mesh/test_arenas/dfs.json')
     node_mapping = arena.get_nodes()
     for i in range(4):
         for j in range(4):
@@ -115,7 +115,7 @@ def test_collision() -> None:
     """
     Tests collision behavior
     """
-    arena = Arena("./testing_auxiliaries/test_arenas/collision.json")
+    arena = Arena("./test_mesh/test_arenas/collision.json")
     node_mapping = arena.get_nodes()
     for i in range(1, 4):
         n = 'n' + str(i)
@@ -151,7 +151,7 @@ def test_hidden_terminal() -> None:
     """
     Tests hidden terminal behavior
     """
-    arena = Arena("./testing_auxiliaries/test_arenas/hidden-terminal.json")
+    arena = Arena("./test_mesh/test_arenas/hidden-terminal.json")
     node_mapping = arena.get_nodes()
     for i in range(1, 4):
         n = 'n' + str(i)

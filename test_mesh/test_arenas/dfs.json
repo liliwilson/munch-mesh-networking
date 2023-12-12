@@ -24,5 +24,5 @@
       ]
     }
   },
-  "rules": []
+  "rules": [["type1", "type1"]]
 }
