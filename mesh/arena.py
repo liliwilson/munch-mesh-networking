@@ -27,8 +27,6 @@ class Arena:
     def send_packet(self, src_node: str, dest_node: str) -> None:
         """
         Initiates a packet send from a source node, to a given a destination node.
-
-        FROM SEAN: I'M TESTING FOR THIS TO JUST CREATE A PACKET AT SRC_NODE.
         """
         pass
 
@@ -44,7 +42,6 @@ class Arena:
         """
         pass
 
-    # Testing
     def get_nodes(self) -> dict[str, Node]:
         """
         Returns a dict mapping MAC addresses to node objects for all nodes in this arena

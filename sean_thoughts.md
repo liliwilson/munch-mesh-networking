@@ -14,7 +14,7 @@ I think it'd be easier to just have a maximum distance a node can reliably trans
 
 ## Testing for normal metworks
 
-Partitions in [`testing_strategy.md`](./mesh/tests/testing_strategy.md).
+Partitions in [`testing_strategy.md`](./mesh/testing_auxiliaries/testing_strategy.md).
 
 I also added some functions various classes (labelled them below testing!).
 

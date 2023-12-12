@@ -3,7 +3,7 @@ from .packet import COPEPacket, ReceptionReport
 
 class Node:
 
-    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_power: float, storage_size: float) -> None:
+    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, storage_size: float) -> None:
         """
         Creates a node object
         """
@@ -15,7 +15,7 @@ class Node:
         """
         pass
 
-    def set_path(self, path: typing.List[str]) -> None:
+    def set_path(self, path: list[str]) -> None:
         """
         Sets the MAC address path from self to the supernode.
         """

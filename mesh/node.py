@@ -5,7 +5,7 @@ from .packet import Packet
 
 class Node:
 
-    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_power: float, storage_size: float) -> None:
+    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, storage_size: float) -> None:
         """
         Creates a node object
         """
