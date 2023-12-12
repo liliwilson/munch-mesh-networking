@@ -138,8 +138,12 @@ def test_collision() -> None:
     elif len(n3.get_queue_state()) == 1:
         assert n3.get_queue_state()[
             0] == n3_first, 'expected to the same packet to be at the head of n3\'s queue'
+        assert len(n1.get_queue_state()) == 1, 'n1 should have sent a packet'
     else:
         raise AssertionError('neither queue sent anything')
+
+    n2 = node_mapping['n2']
+    assert len(n2.get_queue_state()) == 0, 'n2 should not have gotten a packet'
     return
 
 
@@ -166,6 +170,8 @@ def test_hidden_terminal() -> None:
                ) == 1, 'expected length of n1\'s queue to be 1'
     assert len(n3.get_queue_state()
                ) == 0, 'expected length of n3\'s queue to be 0'
+    n2 = node_mapping['n2']
+    assert len(n2.get_queue_state()) == 0, 'n2 should not have gotten a packet'
     return
 
 
@@ -186,5 +192,4 @@ def test_links() -> None:
     """
     Tests some link probabilities based on how far they are.  
     """
-    pass  # TODO I have no clue how to do this
     return
