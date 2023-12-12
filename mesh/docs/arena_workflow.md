@@ -11,10 +11,6 @@ Before we can begin simulating, we need to set up the arena given an input text 
 
     b. If we can make a link, instantiate the link. The link objects will handle determining if transmission probabilty is > 0 based on the power of transmission of its end nodes.
 
-3. Perform DFS from supernodes to determine the ideal paths for each node, using information from links about probability of transmission.
-
-4. Update every node using `set_path` to store the path from that node to the supernode.
-
 ## Running a simulation
 
 Given a number `timesteps`, simulate the network running for that many timesteps. The simulation will operate under the assumption that we have an `end_user_hierarchy_class` and an `internet_access_hierarchy_class`, where the end users typically generate _request_ packets to send to the internet whose destination is a node with internet access (which in turn will generate a _response_).
@@ -37,7 +33,7 @@ At each timestep, the following will take place:
 
 4. All remaining un-collided senders will then be triggered to send their enqueued packet to its nexthop, determined using a minimum-path routing protocol with the DFS results from the beginning. These senders will also all be moved to the back of the arena's node list, to try to enforce some of the MAC fairness that the protocol normally manages.
 
-We also need some way to make sure that senders generate_packets to a random receiver at different timesteps. We plan to incorporate some randomness here to decide when to randomly generate a packet.
+We also need some way to make sure that senders generate_packets to a random receiver at different timesteps. We plan to incorporate some randomness here to decide when to randomly generate a packet. When generating packets, we perform DFS to determine the ideal route.
 
 ### Metrics from arena
 
