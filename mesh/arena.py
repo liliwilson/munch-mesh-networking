@@ -69,6 +69,8 @@ class Arena:
         """
         Initiates a packet send from a source node, to a given a destination node.
         """
+
+        # DFS happpens here to find best path
         pass
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:

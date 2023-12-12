@@ -38,11 +38,12 @@ class Node:
         """
         pass
 
-    def generate_packet(self, dst: str) -> int:
+    def enqueue_packet(self, packet: Packet, timestep: int) -> None:
         """
-        Creates a generated packet with final destination dst and enqueues it.
+        Enqueues the given packet.
 
-        Outputs the packet_id of the packet generated.
+        If self is destination of packet, check if self sent packet with this packet id. 
+            If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
         pass
 
@@ -58,16 +59,7 @@ class Node:
         """
         pass
 
-    def receive_packet(self, packet: Packet, timestep: int) -> None:
-        """
-        Receives a packet and adds the packet to own queue.
-
-        If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
-        """
-        pass
-
     # Testing
-
     def is_neighbor(self, other: str) -> bool:
         """
         Given the MAC address of another node, returns True iff there is a link between self and other.
