@@ -1,9 +1,9 @@
-from os import link
 import typing
 from .link import Link
 from .node import Node
 from .packet import Packet
 import json
+import heapq 
 
 class Arena:
 
@@ -34,13 +34,22 @@ class Arena:
             transmit_distance = hierarchies[hierarchy]['strength']
 
             list_of_macs = []
-            for node_obj in hierarchies[hierarchy]['nodes']:
-                mac_addr = list(node_obj.keys())[0]
-                x = node_obj[mac_addr]['x']               
-                y = node_obj[mac_addr]['y']
+
+            all_nodes = hierarchies[hierarchy]['nodes'][0] 
+            for mac_addr, node_obj in all_nodes.items():
+                x = node_obj['x']               
+                y = node_obj['y']
                 node = Node(mac_addr, x, y, hierarchy, transmit_distance, 0)
 
                 for link_class in rules[hierarchy]:
+                    # if linked to own class, check against current list of MACs
+                    if link_class == hierarchy:
+                       for other in list_of_macs:
+                            node_other = self.node_dict[other]
+                            node.add_link(node_other)
+                            node_other.add_link(node) 
+
+                    # otherwise, check amongst the already finalized hierarchy classes
                     if link_class not in self.hierarchy_dict:
                         continue
                     for other in self.hierarchy_dict[link_class]:
@@ -54,8 +63,6 @@ class Arena:
             
             self.hierarchy_dict[hierarchy] = list_of_macs
 
-        
-    
     def can_link(self, node1: str, node2: str) -> bool:
         """
         Given MAC addresses, test if two nodes can connect to one another.
@@ -65,15 +72,51 @@ class Arena:
         """
         return self.node_dict[node1].is_neighbor(node2) and self.node_dict[node2].is_neighbor(node1)
 
-    def send_packet(self, src_node: str, dest_node: str) -> None:
+    # TODO made timestep a default param here but that was just for test case purposes
+    def send_packet(self, src_node: str, dst_node: str, timestep: int = 0) -> None:
         """
         Initiates a packet send from a source node, to a given a destination node.
         """
-        start_node = self.node_dict[src_node]
+        # TODO do we want to define behavior for if start and end equal
+        if src_node == dst_node:
+            return
 
-        # do dijkstras here to find best path
+        probabilities = {node: 0 for node in self.node_dict.keys()}
+        probabilities[src_node] = -1
+        predecessors = {node: None for node in self.node_dict.keys()}
 
-        pass
+        priority_queue = [(-1, src_node)]
+
+        while priority_queue:
+            current_prob, current_node = heapq.heappop(priority_queue)
+            if current_prob > probabilities[current_node]:
+                continue
+
+            if current_node == dst_node:
+                break
+
+            node_obj = self.node_dict[current_node]
+            for neighbor in node_obj.get_neighbors():
+                prob = -1 * node_obj.get_probability(neighbor)
+                neighbor_prob = probabilities[neighbor]
+                if prob < neighbor_prob:
+                    probabilities[neighbor] = prob
+                    predecessors[neighbor] = current_node
+                    heapq.heappush(priority_queue, (prob, neighbor))
+
+        best_path = []
+        current_node = dst_node
+        while current_node is not None:
+            best_path.insert(0, current_node)
+            current_node = predecessors[current_node]
+
+        # # TODO do we want to set these packet values as constants, or inputs to arena?
+        packet = Packet(0, True, best_path)
+        self.node_dict[src_node].enqueue_packet(packet, timestep)
+
+        print(probabilities)
+
+        print(best_path)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:
         """

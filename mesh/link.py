@@ -9,7 +9,8 @@ class Link:
         """
         Creates a link object between node1 and node2. 
         """
-        pass
+        self.node1 = node1
+        self.node2 = node2
 
     def transmit(self, packet: Packet, source: str) -> bool:
         """

@@ -2,18 +2,24 @@ from typing import Any
 
 
 class Packet:
+    num_packets = 0
 
-    def __init__(self, payload_size: int, packet_id: int, is_request: bool, path_to_dst: list[str]) -> None:
+    def __init__(self, payload_size: int, is_request: bool, path_to_dst: list[str], packet_id: int = None) -> None:
         """
         Creates a packet given a path to the destination MAC address and a packet size in bytes.
 
         Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.
+        
+        If no packet id supplied, sets to be the next packet id.
         """
         self.payload_size = payload_size
-        self.packet_id = packet_id
         self.is_request = is_request
-        self.path_to_dst = path_to_dst
-        return
+        self.path_to_dst = path_to_dst[:]
+        if packet_id:
+            self.packet_id = packet_id
+        else:
+            self.num_packets += 1
+            self.packet_id = self.num_packets
 
     def get_path(self) -> list[str]:
         """

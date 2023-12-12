@@ -19,6 +19,8 @@ class Node:
 
         self.links = {}
 
+        self.queue = []
+
     def add_link(self, other: "Node") -> None:
         """
         Adds a link from self to other.
@@ -45,7 +47,7 @@ class Node:
         If self is destination of packet, check if self sent packet with this packet id. 
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
-        pass
+        self.queue.append((packet, timestep))
 
     def get_next_destination(self) -> str:
         """
@@ -70,7 +72,7 @@ class Node:
         """
         Returns an ordered list of packets, representing self's current queue.
         """
-        return []
+        return [p[0] for p in self.queue]
 
     def get_packets_received(self) -> int:
         """
@@ -96,6 +98,17 @@ class Node:
         """
         return self.transmit_distance
 
+    def get_neighbors(self) -> list['Node']:
+        """
+        Return a list of nodes we are connected to.
+        """
+        return list(self.links.keys())
+
+    def get_probability(self, neighbor: str) -> float:
+        if not neighbor in self.links:
+            return 0
+        
+        return self.links[neighbor].get_probability()
 
     def __str__(self) -> str:
         """
