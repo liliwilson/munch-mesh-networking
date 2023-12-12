@@ -97,12 +97,13 @@ class Arena:
 
             node_obj = self.node_dict[current_node]
             for neighbor in node_obj.get_neighbors():
-                prob = -1 * node_obj.get_probability(neighbor)
+                new_prob = current_prob * node_obj.get_probability(neighbor)
                 neighbor_prob = probabilities[neighbor]
-                if prob < neighbor_prob:
-                    probabilities[neighbor] = prob
+
+                if new_prob < neighbor_prob:
+                    probabilities[neighbor] = new_prob
                     predecessors[neighbor] = current_node
-                    heapq.heappush(priority_queue, (prob, neighbor))
+                    heapq.heappush(priority_queue, (new_prob, neighbor))
 
         best_path = []
         current_node = dst_node
@@ -110,13 +111,10 @@ class Arena:
             best_path.insert(0, current_node)
             current_node = predecessors[current_node]
 
-        # # TODO do we want to set these packet values as constants, or inputs to arena?
+        # # TODO do we want to set storage size as a constant, or input to arena?
         packet = Packet(0, True, best_path)
         self.node_dict[src_node].enqueue_packet(packet, timestep)
 
-        print(probabilities)
-
-        print(best_path)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:
         """
