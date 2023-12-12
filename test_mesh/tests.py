@@ -149,7 +149,7 @@ def test_collision() -> None:
 
 def test_hidden_terminal() -> None:
     """
-    Tests hidden terminal behavior
+    Tests hidden terminal behavior, AMPLIFY 10 TIMES
     """
     arena = Arena("./test_mesh/test_arenas/hidden-terminal.json")
     node_mapping = arena.get_nodes()

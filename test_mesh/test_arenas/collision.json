@@ -1,15 +1,32 @@
 {
   "hierarchies": {
     "type1": {
-      "strength": 5,
+      "strength": 10000000,
       "nodes": [
         {
-          "n1": { "x": 0, "y": 0 },
-          "n2": { "x": 1, "y": 0 },
+          "n1": { "x": 0, "y": 0 }
+        }
+      ]
+    },
+    "type2": {
+      "strength": 10000000,
+      "nodes": [
+        {
+          "n2": { "x": 1, "y": 0 }
+        }
+      ]
+    },
+    "type3": {
+      "strength": 10000000,
+      "nodes": [
+        {
           "n3": { "x": 2, "y": 0 }
         }
       ]
     }
   },
-  "rules": [["type1", "type1"]]
+  "rules": [
+    ["type1", "type2"],
+    ["type2", "type3"]
+  ]
 }
