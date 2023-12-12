@@ -25,7 +25,7 @@ class Packet:
         """
         Gets the packet's path to destination.
         """
-        return self.path_to_dst
+        return self.path_to_dst[:]
 
     def get_is_request(self) -> bool:
         """

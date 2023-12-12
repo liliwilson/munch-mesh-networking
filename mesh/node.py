@@ -53,7 +53,9 @@ class Node:
         """
         Returns the MAC address of the nexthop of the packet at the front of the queue.
         """
-        pass
+        next_packet = self.queue[0][0]
+        packet_path = next_packet.get_path()
+        return packet_path[packet_path.index(self.mac_address) + 1]
 
     def send_from_queue(self, timestep: int) -> Packet:
         """
@@ -62,11 +64,19 @@ class Node:
         pass
 
     # Testing
-    def is_neighbor(self, other: str) -> bool:
+    def is_linked(self, other: str) -> bool:
         """
         Given the MAC address of another node, returns True iff there is a link between self and other.
         """
         return other in self.links
+
+    # TODO will it be an issue that this method is not taking into account another nodes transmission range? 
+    # this is to be used for determining if the medium is being used currently
+    def in_range(self, x: float, y: float) -> bool:
+        """
+        Given an (x,y) coordinate, determines if that coordinate is within range of this node.
+        """
+        return ((x - self.x) ** 2 + (y - self.y) ** 2) ** 0.5 <= self.transmit_distance
 
     def get_queue_state(self) -> list[Packet]:
         """

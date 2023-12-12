@@ -63,6 +63,8 @@ class Arena:
             
             self.hierarchy_dict[hierarchy] = list_of_macs
 
+        self.active_node_list = list(self.node_dict.keys())
+
     def can_link(self, node1: str, node2: str) -> bool:
         """
         Given MAC addresses, test if two nodes can connect to one another.
@@ -70,7 +72,7 @@ class Arena:
         This involves checking if they are allowed to connect, as well as if they are close enough together
         that, given their power capabilities, they can reach one another.
         """
-        return self.node_dict[node1].is_neighbor(node2) and self.node_dict[node2].is_neighbor(node1)
+        return self.node_dict[node1].is_linked(node2) and self.node_dict[node2].is_linked(node1)
 
     # TODO made timestep a default param here but that was just for test case purposes
     def send_packet(self, src_node: str, dst_node: str, timestep: int = 0) -> None:
@@ -111,7 +113,7 @@ class Arena:
             best_path.insert(0, current_node)
             current_node = predecessors[current_node]
 
-        # # TODO do we want to set storage size as a constant, or input to arena?
+        # TODO do we want to set storage size as a constant, or input to arena?
         packet = Packet(0, True, best_path)
         self.node_dict[src_node].enqueue_packet(packet, timestep)
 
@@ -126,7 +128,23 @@ class Arena:
         """
         Steps the arena for one timestep
         """
-        pass
+        sending = []
+
+        for node in self.active_node_list:
+            node_obj = self.node_dict[node]
+            node_queue = node_obj.get_queue_state()
+            if node_queue:
+               # check if medium is free by comparing to nodes in sending
+                for sender in sending:
+                    if node_obj.in_range(*sender.get_position()):
+                        continue 
+                sending.append(node_obj)
+                nexthop = node_obj.get_next_destination()
+
+        # TODO determine hidden terminals collisions
+        # TODO trigger sending behavior in each node
+        
+        
 
     def get_nodes(self) -> dict[str, Node]:
         """
