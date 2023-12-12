@@ -19,14 +19,13 @@ class Link:
         """
         pass
 
-    # TESTING
-
-    # This could prob also be used for setting the prob permanently?
-
     def get_probability(self) -> float:
         """
-        Returns the probability that any packet send on this link will be completed
-
-        Must be a value between 0 and 1 inclusive.
+        Return the probability of successful transmission along this node using the formula from https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7954581, with randomness in the formula removed for ease of testing. 
         """
-        pass
+        transmit_range = min(self.node1.get_transmit_distance(), self.node2.get_transmit_distance())
+        n1_x, n1_y = self.node1.get_position()
+        n2_x, n2_y = self.node2.get_position()
+        actual = ((n1_x - n2_x) ** 2 + (n1_y - n2_y) ** 2) ** 0.5
+
+        return max(1 - 0.8 * actual / transmit_range, 0)
