@@ -37,13 +37,16 @@ def test_two_nodes() -> None:
     packet = n1.get_queue_state()[0]
     assert packet.get_is_request(), 'packet should be a request packet'
 
-    arena.run()  # TODO: change this to have the parameters required
+    arena.run(override=True)
 
-    # TODO: Check if this is correct (read the error message)
-    assert len(n2.get_queue_state(
-    )) == 1, 'If this check is failing it is because I am imagining n2 instantly getting a response for n1'
+    assert len(n1.get_queue_state()
+               ) == 0, 'n1 should have sent and thus have no packets'
 
-    arena.run()  # TODO: change this to have the parameters required
+    # TODO: uncomment this once we have implemented returning packets
+    # assert len(n2.get_queue_state(
+    # )) == 1, 'If this check is failing it is because I am imagining n2 instantly getting a response for n1'
+
+    # arena.run(override=True)
 
     return
 
@@ -101,12 +104,11 @@ def test_shortest_path() -> None:
     packet = n30.get_queue_state()[0]
     assert packet.get_path() == ['n30', 'n21', 'n12',
                                  'n03'], 'shortest path is wrong'
-    
-    # TODO uncomment this out once we implement run()
-    #arena.run()
-    #for n in ['n11', 'n21']:
-        #assert len(node_mapping[n].get_queue_state()
-         #          ) == 1, n + ' should have one packet in queue after one timestep'
+
+    arena.run(override=True)
+    for n in ['n11', 'n21']:
+        assert len(node_mapping[n].get_queue_state()
+                   ) == 1, n + ' should have one packet in queue after one timestep'
 
 
 def test_collision() -> None:
@@ -142,12 +144,14 @@ def test_collision() -> None:
 
     n2 = node_mapping['n2']
     assert len(n2.get_queue_state()) == 1, 'n2 should have gotten a packet'
+    assert n2.get_queue_state()[0] == n1_first or n2.get_queue_state()[
+        0] == n3_first, 'packet that n2 got should be one of the two that n1 or n3 sent'
     return
 
 
 def test_hidden_terminal() -> None:
     """
-    Tests hidden terminal behavior, AMPLIFY 10 TIMES
+    Tests hidden terminal behavior
     """
     arena = Arena("./test_mesh/test_arenas/hidden-terminal.json")
     node_mapping = arena.get_nodes()
@@ -159,10 +163,9 @@ def test_hidden_terminal() -> None:
 
     arena.send_packet('n1', 'n2')
     arena.send_packet('n1', 'n2')
-    n1_first = n1.get_queue_state()[0]
     arena.send_packet('n3', 'n2')
-    n3_first = n3.get_queue_state()[0]
-    arena.run()  # should have a hidden terminal instance occur, so no queues are changed
+    # should have a hidden terminal instance occur, so no queues are changed
+    arena.run(override=True)
 
     assert len(n1.get_queue_state()
                ) == 1, 'expected length of n1\'s queue to be 1'

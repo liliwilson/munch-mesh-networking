@@ -3,7 +3,8 @@ from .link import Link
 from .node import Node
 from .packet import Packet
 import json
-import heapq 
+import heapq
+
 
 class Arena:
 
@@ -25,29 +26,29 @@ class Arena:
             rules[t2].add(t1)
 
         # mapping of hierarchies to list MAC addresses
-        self.hierarchy_dict = {} 
+        self.hierarchy_dict = {}
 
         # mapping of MAC addresses to nodes
-        self.node_dict = {}
+        self.node_dict: dict[str, Node] = {}
 
         for hierarchy in hierarchies:
             transmit_distance = hierarchies[hierarchy]['strength']
 
             list_of_macs = []
 
-            all_nodes = hierarchies[hierarchy]['nodes'][0] 
+            all_nodes = hierarchies[hierarchy]['nodes'][0]
             for mac_addr, node_obj in all_nodes.items():
-                x = node_obj['x']               
+                x = node_obj['x']
                 y = node_obj['y']
                 node = Node(mac_addr, x, y, hierarchy, transmit_distance, 0)
 
                 for link_class in rules[hierarchy]:
                     # if linked to own class, check against current list of MACs
                     if link_class == hierarchy:
-                       for other in list_of_macs:
+                        for other in list_of_macs:
                             node_other = self.node_dict[other]
                             node.add_link(node_other)
-                            node_other.add_link(node) 
+                            node_other.add_link(node)
 
                     # otherwise, check amongst the already finalized hierarchy classes
                     if link_class not in self.hierarchy_dict:
@@ -60,10 +61,11 @@ class Arena:
                 list_of_macs.append(mac_addr)
 
                 self.node_dict[mac_addr] = node
-            
+
             self.hierarchy_dict[hierarchy] = list_of_macs
 
         self.active_node_list = list(self.node_dict.keys())
+        self.timestep = 0
 
     def can_link(self, node1: str, node2: str) -> bool:
         """
@@ -74,8 +76,7 @@ class Arena:
         """
         return self.node_dict[node1].is_linked(node2) and self.node_dict[node2].is_linked(node1)
 
-    # TODO made timestep a default param here but that was just for test case purposes
-    def send_packet(self, src_node: str, dst_node: str, timestep: int = 0) -> None:
+    def send_packet(self, src_node: str, dst_node: str) -> None:
         """
         Initiates a packet send from a source node, to a given a destination node.
         """
@@ -115,36 +116,53 @@ class Arena:
 
         # TODO do we want to set storage size as a constant, or input to arena?
         packet = Packet(0, True, best_path)
-        self.node_dict[src_node].enqueue_packet(packet, timestep)
-
+        self.node_dict[src_node].enqueue_packet(packet, self.timestep)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:
         """
         Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
         """
-        pass
+        return {}
 
-    def run(self) -> None:
+    def run(self, override=False) -> None:
         """
         Steps the arena for one timestep
         """
-        sending = []
+        sending: list[Node] = []
+        nexthops = set()
+        ht = set()
 
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
             node_queue = node_obj.get_queue_state()
-            if node_queue:
-               # check if medium is free by comparing to nodes in sending
-                for sender in sending:
-                    if node_obj.in_range(*sender.get_position()):
-                        continue 
+            if not node_queue:
+                continue
+
+            # check if medium is free by comparing to nodes in sending
+            for sender in sending:
+                # checks if either one is in range of the other
+                if node_obj.in_range(*sender.get_position()):
+                    break
+                elif sender.in_range(*node_obj.get_position()):
+                    break
+            else:
                 sending.append(node_obj)
                 nexthop = node_obj.get_next_destination()
+                if nexthop in nexthops:
+                    ht.add(nexthop)
+                else:
+                    nexthops.add(nexthop)
 
-        # TODO determine hidden terminals collisions
-        # TODO trigger sending behavior in each node
-        
-        
+        for ht_node in ht:
+            nexthops.remove(ht_node)
+
+        for sender in sending:
+            dest = sender.get_next_destination()
+            sender.send_from_queue(
+                self.timestep, bool(dest in ht), override)
+
+        self.timestep += 1
+        # TODO: reorder the sending queue for arena
 
     def get_nodes(self) -> dict[str, Node]:
         """

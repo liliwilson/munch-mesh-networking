@@ -17,9 +17,10 @@ class Node:
         self.transmit_distance = transmit_distance
         self.storage_size = storage_size
 
-        self.links = {}
+        self.links: dict[str, Link] = {}
 
         self.queue = []
+        self.sent = set()
 
     def add_link(self, other: "Node") -> None:
         """
@@ -30,9 +31,8 @@ class Node:
         actual = ((self.x - other_x) ** 2 + (self.y - other_y) ** 2) ** 0.5
         if actual <= distance:
             link = Link(self, other)
-            self.links[other.get_mac()] = link 
+            self.links[other.get_mac()] = link
         return
-        
 
     def set_path(self, path: list[str]) -> None:
         """
@@ -47,30 +47,42 @@ class Node:
         If self is destination of packet, check if self sent packet with this packet id. 
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
+        # TODO: all other behavior besides just enqueue
         self.queue.append((packet, timestep))
 
-    def get_next_destination(self) -> str:
+    def get_next_destination(self) -> str | None:
         """
         Returns the MAC address of the nexthop of the packet at the front of the queue.
         """
+        # if not self.queue:
+        #     return None
         next_packet = self.queue[0][0]
         packet_path = next_packet.get_path()
         return packet_path[packet_path.index(self.mac_address) + 1]
 
-    def send_from_queue(self, timestep: int) -> Packet:
+    def send_from_queue(self, timestep: int, hidden_terminal: bool, override: bool) -> Packet:
         """
         Dequeues the next packet and sends the packet to its next hop. 
+
+        If override, packet will always complete except if it's a hidden terminal
         """
-        pass
+        nexthop = self.get_next_destination()
+        packet = self.queue.pop(0)[0]
+        if hidden_terminal:
+            return packet
+        self.links[nexthop].transmit(
+            packet, self.mac_address, timestep, override)
+        return packet
 
     # Testing
+
     def is_linked(self, other: str) -> bool:
         """
         Given the MAC address of another node, returns True iff there is a link between self and other.
         """
         return other in self.links
 
-    # TODO will it be an issue that this method is not taking into account another nodes transmission range? 
+    # TODO will it be an issue that this method is not taking into account another nodes transmission range?
     # this is to be used for determining if the medium is being used currently
     def in_range(self, x: float, y: float) -> bool:
         """
@@ -95,13 +107,13 @@ class Node:
         Returns the position of the node in (x, y) format
         """
         return (self.x, self.y)
-    
+
     def get_mac(self) -> str:
         """
         Returns the mac address of this node
         """
         return self.mac_address
-    
+
     def get_transmit_distance(self) -> float:
         """
         Returns the transmit distance of this node
@@ -117,7 +129,7 @@ class Node:
     def get_probability(self, neighbor: str) -> float:
         if not neighbor in self.links:
             return 0
-        
+
         return self.links[neighbor].get_probability()
 
     def __str__(self) -> str:
@@ -132,5 +144,3 @@ class Node:
         """
 
         return f"Node(mac_addr=\"{self.mac_address}\", x={self.x}, y={self.y}, transmit_distance={self.transmit_distance}, hierarchy_class=\"{self.hierarchy_class}\")"
-
-
