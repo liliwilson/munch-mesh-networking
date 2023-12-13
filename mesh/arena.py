@@ -76,7 +76,7 @@ class Arena:
         """
         return self.node_dict[node1].is_linked(node2) and self.node_dict[node2].is_linked(node1)
 
-    def send_packet(self, src_node: str, dst_node: str) -> None:
+    def send_packet(self, src_node: str, dst_node: str, is_two_way: bool = True) -> None:
         """
         Initiates a packet send from a source node, to a given a destination node.
         """
@@ -115,7 +115,7 @@ class Arena:
             current_node = predecessors[current_node]
 
         # TODO do we want to set storage size as a constant, or input to arena?
-        packet = Packet(0, True, best_path)
+        packet = Packet(0, is_two_way, best_path)
         self.node_dict[src_node].enqueue_packet(packet, self.timestep)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:
@@ -161,8 +161,11 @@ class Arena:
             sender.send_from_queue(
                 self.timestep, bool(dest in ht), override)
 
+        for sender in sending:
+            self.active_node_list.remove(sender.get_mac())
+            self.active_node_list.append(sender.get_mac())
+
         self.timestep += 1
-        # TODO: reorder the sending queue for arena
 
     def get_nodes(self) -> dict[str, Node]:
         """
