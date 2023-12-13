@@ -176,6 +176,30 @@ def test_hidden_terminal() -> None:
     return
 
 
+def test_priority_nodes() -> None:
+    """
+    Tests that arena is properly assuring fairness
+    """
+    arena = Arena("./test_mesh/test_arenas/cycles-priority-nodes.json")
+    node_mapping = arena.get_nodes()
+    for i in range(1, 4):
+        n = 'n' + str(i)
+        assert n in node_mapping, 'expected ' + n + ' to be in node_mapping'
+    assert len(node_mapping) == 3, 'expected only four nodes in mapping'
+
+    arena.send_packet('n1', 'n3', False)
+    arena.send_packet('n1', 'n3', False)
+    arena.send_packet('n2', 'n3', False)
+    arena.send_packet('n2', 'n3', False)
+
+    arena.run(override=True)
+    arena.run(override=True)
+
+    for n in ['n1', 'n2']:
+        assert len(node_mapping[n].get_queue_state()
+                   ) == 1, 'each node should have sent once'
+
+
 def test_packet() -> None:
     """
     Tests that packet objects and helper methods work.
