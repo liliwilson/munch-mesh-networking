@@ -75,7 +75,7 @@ class Node:
         self.queue.append((response_packet, timestep))
         return
 
-    def get_next_destination(self) -> str | None:
+    def get_next_destination(self) -> str or None:
         """
         Returns the MAC address of the nexthop of the packet at the front of the queue.
         """
