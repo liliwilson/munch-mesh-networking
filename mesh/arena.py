@@ -26,7 +26,7 @@ class Arena:
             rules[t2].add(t1)
 
         # mapping of hierarchies to list MAC addresses
-        self.hierarchy_dict = {}
+        self.hierarchy_dict: dict[str, str] = {}
 
         # mapping of MAC addresses to nodes
         self.node_dict: dict[str, Node] = {}
@@ -64,8 +64,8 @@ class Arena:
 
             self.hierarchy_dict[hierarchy] = list_of_macs
 
-        self.active_node_list = list(self.node_dict.keys())
-        self.timestep = 0
+        self.active_node_list: list[str] = list(self.node_dict.keys())
+        self.timestep: int = 0
 
     def can_link(self, node1: str, node2: str) -> bool:
         """

@@ -10,16 +10,16 @@ class Node:
         """
         Creates a node object
         """
-        self.mac_address = mac_address
-        self.x = x
-        self.y = y
-        self.hierarchy_class = hierarchy_class
-        self.transmit_distance = transmit_distance
-        self.storage_size = storage_size
+        self.mac_address: str = mac_address
+        self.x: float = x
+        self.y: float = y
+        self.hierarchy_class: str = hierarchy_class
+        self.transmit_distance: float = transmit_distance
+        self.storage_size: float = storage_size
 
         self.links: dict[str, Link] = {}
 
-        self.queue = []
+        self.queue: list[tuple[Packet, int]] = []
         self.sent = set()
 
     def add_link(self, other: "Node") -> None:
@@ -54,8 +54,6 @@ class Node:
         """
         Returns the MAC address of the nexthop of the packet at the front of the queue.
         """
-        # if not self.queue:
-        #     return None
         next_packet = self.queue[0][0]
         packet_path = next_packet.get_path()
         return packet_path[packet_path.index(self.mac_address) + 1]
