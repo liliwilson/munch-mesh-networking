@@ -26,7 +26,9 @@ class Link:
         elif source == self.node1.get_mac():
             self.node2.enqueue_packet(packet, timestep)
         elif source == self.node2.get_mac():
-            self.node1.enqueue_packet(packet, timestep)
+            self.node1.enqueue_packet(packet, timestep) 
+        else: 
+            raise ValueError("node must be connected to link to transmit over it")
         return success
 
     def get_probability(self) -> float:

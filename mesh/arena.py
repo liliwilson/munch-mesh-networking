@@ -134,7 +134,7 @@ class Arena:
         """
         sending: list[Node] = []
         nexthops = set()
-        ht = set()
+        ht = set() 
 
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
@@ -169,7 +169,7 @@ class Arena:
             self.active_node_list.remove(sender.get_mac())
             self.active_node_list.append(sender.get_mac())
 
-        # this bit tells nodes whehter they should create a response packet
+        # this bit tells nodes whether they should create a response packet
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
             node_obj.learn_timestep(self.timestep)

@@ -50,16 +50,16 @@ class Node:
         If self is destination of packet, check if self sent packet with this packet id. 
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
-        if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
+        if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()): 
             # TODO: add in metrics here
             self.received_packets += 1
             return
         elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
-            self.sent.add(packet.get_id())
+            self.sent.add(packet.get_id()) # TODO do we also want to track time of sending?
             self.queue.append((packet, timestep))
         elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
             self.waiting_for_response[timestep +
-                                      self.response_wait_time] = packet.get_reverse()
+                                      self.response_wait_time] = packet.get_reverse() 
         else:
             self.queue.append((packet, timestep))
         return
