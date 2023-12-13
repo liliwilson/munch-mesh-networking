@@ -20,6 +20,8 @@ class Arena:
             data_rules = data['rules']
             hierarchies = data['hierarchies']
 
+        response_wait_time: int = data['responseWaitTime']
+
         rules = {h: set() for h in hierarchies}
         for t1, t2 in data_rules:
             rules[t1].add(t2)
@@ -40,7 +42,8 @@ class Arena:
             for mac_addr, node_obj in all_nodes.items():
                 x = node_obj['x']
                 y = node_obj['y']
-                node = Node(mac_addr, x, y, hierarchy, transmit_distance, 0)
+                node = Node(mac_addr, x, y, hierarchy,
+                            transmit_distance, response_wait_time, 0)
 
                 for link_class in rules[hierarchy]:
                     # if linked to own class, check against current list of MACs
@@ -66,6 +69,7 @@ class Arena:
 
         self.active_node_list: list[str] = list(self.node_dict.keys())
         self.timestep: int = 0
+        self.packets_queued: int = 0
 
     def can_link(self, node1: str, node2: str) -> bool:
         """
@@ -164,6 +168,11 @@ class Arena:
         for sender in sending:
             self.active_node_list.remove(sender.get_mac())
             self.active_node_list.append(sender.get_mac())
+
+        # this bit tells nodes whehter they should create a response packet
+        for node in self.active_node_list:
+            node_obj = self.node_dict[node]
+            node_obj.learn_timestep(self.timestep)
 
         self.timestep += 1
 

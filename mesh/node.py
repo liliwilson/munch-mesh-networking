@@ -6,7 +6,7 @@ from .link import Link
 
 class Node:
 
-    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, storage_size: float) -> None:
+    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int, storage_size: float) -> None:
         """
         Creates a node object
         """
@@ -15,12 +15,15 @@ class Node:
         self.y: float = y
         self.hierarchy_class: str = hierarchy_class
         self.transmit_distance: float = transmit_distance
+        self.response_wait_time: int = response_wait_time
         self.storage_size: float = storage_size
 
         self.links: dict[str, Link] = {}
 
         self.queue: list[tuple[Packet, int]] = []
         self.sent = set()
+        self.waiting_for_response: dict[int, Packet] = {}
+        self.received_packets = 0
 
     def add_link(self, other: "Node") -> None:
         """
@@ -47,8 +50,30 @@ class Node:
         If self is destination of packet, check if self sent packet with this packet id. 
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
-        # TODO: all other behavior besides just enqueue
-        self.queue.append((packet, timestep))
+        if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
+            # TODO: add in metrics here
+            self.received_packets += 1
+            return
+        elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
+            self.sent.add(packet.get_id())
+            self.queue.append((packet, timestep))
+        elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
+            self.waiting_for_response[timestep +
+                                      self.response_wait_time] = packet.get_reverse()
+        else:
+            self.queue.append((packet, timestep))
+        return
+
+    def learn_timestep(self, timestep: int) -> None:
+        """
+        Tells this node the timestep that the arena is currently on. Updates the queue if it should
+        """
+        if timestep not in self.waiting_for_response:
+            return
+
+        response_packet = self.waiting_for_response.pop(timestep)
+        self.queue.append((response_packet, timestep))
+        return
 
     def get_next_destination(self) -> str | None:
         """
@@ -98,7 +123,7 @@ class Node:
         """
         Returns the number of packets that this node has received
         """
-        return 0
+        return self.received_packets
 
     def get_position(self) -> tuple[float, float]:
         """

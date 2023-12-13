@@ -36,5 +36,6 @@
   "rules": [
     ["type1", "type2"],
     ["type1", "type3"]
-  ]
+  ],
+  "responseWaitTime": 1
 }

@@ -42,11 +42,14 @@ def test_two_nodes() -> None:
     assert len(n1.get_queue_state()
                ) == 0, 'n1 should have sent and thus have no packets'
 
-    # TODO: uncomment this once we have implemented returning packets
-    # assert len(n2.get_queue_state(
-    # )) == 1, 'If this check is failing it is because I am imagining n2 instantly getting a response for n1'
+    for _ in range(5):
+        arena.run()
 
-    # arena.run(override=True)
+    assert len(n2.get_queue_state(
+    )) == 1, 'If this check is failing it is because I am imagining n2 instantly getting a response for n1'
+
+    arena.run(override=True)
+    assert n1.get_packets_received() == 1, 'n1 should have gotten 1 packet'
 
     return
 
@@ -142,10 +145,11 @@ def test_collision() -> None:
     else:
         raise AssertionError('neither queue sent anything')
 
+    arena.run()
     n2 = node_mapping['n2']
     assert len(n2.get_queue_state()) == 1, 'n2 should have gotten a packet'
-    assert n2.get_queue_state()[0] == n1_first or n2.get_queue_state()[
-        0] == n3_first, 'packet that n2 got should be one of the two that n1 or n3 sent'
+    assert n2.get_queue_state()[0] == n1_first.get_reverse() or n2.get_queue_state()[
+        0] == n3_first.get_reverse(), 'packet that n2 got should be one of the two that n1 or n3 sent for the reverse direction'
     return
 
 
@@ -210,6 +214,9 @@ def test_packet() -> None:
     assert packet.get_path() == path, "packet path is wrong"
     assert packet.get_is_request() == True, "packet should be a request"
     assert packet.get_id() == packet_id, "Packet_id is wrong"
+    assert packet.get_reverse() == Packet(
+        256, False, [str(i) for i in range(99, -1, -1)], packet_id
+    )
     return
 
 

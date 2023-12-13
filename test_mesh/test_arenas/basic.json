@@ -9,5 +9,6 @@
       ]
     }
   },
-  "rules": []
+  "rules": [],
+  "responseWaitTime": 1
 }
