@@ -18,12 +18,12 @@ class Node:
         self.links: dict[str, Link] = {}
 
         self.queues: dict[str, list[tuple[Packet, int]]] = {}
-        self.sent = {}
+        self.sent: dict[int, int] = {}
         self.waiting_for_response: dict[int, Packet] = {}
         self.received = {}
         self.received_packets = 0
-        self.packet_pool: dict[tuple(str, bool)] = {}
-        self.neighbor_state: dict[str, set[int]] = {}
+        self.packet_pool: dict[tuple[str, bool], int] = {}
+        self.neighbor_state: dict[str, set[tuple[int, bool]]] = {}
         self.packet_pool_expiration: int = packet_pool_expiration
 
         self.coded_packets_history: list[tuple[list[int], int]] = []
@@ -62,7 +62,8 @@ class Node:
             return
         # initiating a send
         elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
-            self.packet_pool[(packet.get_id(), packet.get_is_request())] = timestep
+            self.packet_pool[(
+                packet.get_id(), packet.get_is_request())] = timestep
             self.sent[packet.get_id()] = timestep
             self.queues[packet.get_path()[1]].append((packet, timestep))
         elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
@@ -122,7 +123,7 @@ class Node:
         """
         node = report.get_node()
         packets = report.get_packets()
-        self.neighbor_state[node].union(packets)
+        self.neighbor_state[node] = self.neighbor_state[node].union(packets)
         return
 
     def learn_timestep(self, timestep: int) -> None:
@@ -134,6 +135,8 @@ class Node:
 
         response_packet = self.waiting_for_response.pop(timestep)
         path = response_packet.get_path()
+        self.packet_pool[(response_packet.get_id(),
+                          response_packet.get_is_request())] = timestep
         self.queues[path[1]].append((response_packet, timestep))
         return
 
@@ -162,11 +165,11 @@ class Node:
         packets = [self.queues[nexthops[0]].pop(0)[0]]
         if hidden_terminal:
             return
-
         for neighbor, q in self.queues.items():  # adds all packets to the copepacket
-            if all(p.get_id() in self.neighbor_state[neighbor] for p in packets):
-                packets.append(q.pop(0)[0])
-                nexthops.append(neighbor)
+            if q:
+                if all((p.get_id(), p.get_is_request()) in self.neighbor_state[neighbor] for p in packets):
+                    packets.append(q.pop(0)[0])
+                    nexthops.append(neighbor)
 
         for neighbor in nexthops:  # this ensures fairness, so we are not just encoding the same people
             self.neighbor_state[neighbor] = self.neighbor_state.pop(neighbor)
@@ -174,7 +177,8 @@ class Node:
         cope_packet = COPEPacket(packets, ReceptionReport(
             set(self.packet_pool), self.mac_address))
 
-        self.coded_packets_history.append(([packet.get_id() for packet in packets], timestep))
+        self.coded_packets_history.append(
+            ([packet.get_id() for packet in packets], timestep))
 
         for nexthop in self.links:
             self.links[nexthop].transmit(
@@ -264,18 +268,18 @@ class Node:
         Returns the packet pool of self
         """
         return self.packet_pool
-    
+
     def get_sent(self) -> dict[str, str]:
         """
         Return a dictionary of packets sent by this node and their timesteps
         """
-        return {k: v for k,v in self.sent.items()}
+        return {k: v for k, v in self.sent.items()}
 
     def get_received(self) -> dict[str, str]:
         """
         Return a dictionary of packets received by this node and their timesteps
         """
-        return {k: v for k,v in self.received.items()}
+        return {k: v for k, v in self.received.items()}
 
     def get_coded_packets_history(self) -> list[tuple[list[int], int]]:
         """

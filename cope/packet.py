@@ -64,7 +64,7 @@ class Packet:
 
 class ReceptionReport:
 
-    def __init__(self, stored_packets: set[int], node: str):
+    def __init__(self, stored_packets: set[tuple[int, bool]], node: str):
         """
         Create a reception report for a given node, given a list of packet IDs it has stored.
         """
@@ -77,7 +77,7 @@ class ReceptionReport:
         """
         return self.node
 
-    def get_packets(self) -> set[int]:
+    def get_packets(self) -> set[tuple[int, bool]]:
         """
         Gets the packets that are self.get_node() is confirmed to have
         """

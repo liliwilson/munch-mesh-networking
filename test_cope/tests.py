@@ -244,6 +244,7 @@ def test_priority_nodes() -> None:
         assert get_packets_in_queues(node_mapping[n].get_all_queues()
                                      ) == 1, 'each node should have sent once'
 
+
 def test_sim_collision() -> None:
     """
     Test simulation and metrics getting for the collision example.
@@ -256,16 +257,15 @@ def test_sim_collision() -> None:
     assert n1_metrics['average_latency'] > 1
     assert n1_metrics['throughput'] <= 1 and n1_metrics['throughput'] >= 0
 
-def test_sim_wheel_top() -> None:
+
+def test_alice_and_bob() -> None:
     """
     Test simulation and metrics getting for the collision example.
     """
-    arena = Arena("./test_cope/test_arenas/wheel-top.json")
-    metrics = arena.simulate(100, 'type2', 'type2', probability_send=0.1)
-    n1_metrics = metrics['n1']
+    arena = Arena("./test_cope/test_arenas/alice_and_bob.json")
+    metrics = arena.simulate(1000, 'type1', 'type1', probability_send=0.1)
 
-    print(metrics)
-
-    assert n1_metrics['successes'] > 0
-    assert n1_metrics['average_latency'] > 1
-    assert n1_metrics['throughput'] <= 1 and n1_metrics['throughput'] >= 0
+    assert metrics['n1']['successes'] > 0 and metrics['n3']['successes'] > 0
+    assert metrics['n1']['average_latency'] > 1 and metrics['n3']['average_latency'] > 1
+    assert metrics['n1']['throughput'] <= 1 and metrics['n1']['throughput'] >= 0 and metrics['n3']['throughput'] <= 1 and metrics['n3']['throughput'] >= 0
+    assert metrics['n2']['coding_opps_taken'] > 0

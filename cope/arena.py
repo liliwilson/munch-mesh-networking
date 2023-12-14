@@ -145,7 +145,6 @@ class Arena:
                         self.send_packet(end_user, internet_enabled_node)
 
             self.run()
-
         # get metrics
         per_node_metrics = {}
         for node_mac, node in self.node_dict.items():
@@ -153,7 +152,8 @@ class Arena:
             received = node.get_received()
             coded_packet_history = node.get_coded_packets_history()
 
-            coding_opps = len([entry for entry in coded_packet_history if len(entry[0]) > 1])
+            coding_opps = len(
+                [entry for entry in coded_packet_history if len(entry[0]) > 1])
 
             packet_drops, packet_successes = 0, 0
             latencies = []
@@ -169,7 +169,7 @@ class Arena:
                 'throughput': packet_successes / timesteps,
                 'drops': packet_drops,
                 'average_latency': sum(latencies)/len(latencies) if len(latencies) > 0 else float('inf'),
-                'coding_opps_taken': coding_opps 
+                'coding_opps_taken': coding_opps
             }
 
         return per_node_metrics
