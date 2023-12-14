@@ -111,27 +111,33 @@ def test_shortest_path() -> None:
 
     arena.send_packet('n00', 'n33')
     n00 = node_mapping['n00']
-    assert len(n00.get_queue_state()
+    assert len(n00.get_queue_state('n11')
                ) == 1, 'n00 should have one packet in queue'
-    packet = n00.get_queue_state()[0]
+    packet = n00.get_queue_state('n11')[0]
     assert packet.get_path() == ['n00', 'n11', 'n22',
                                  'n33'], 'shortest path is wrong'
 
     arena.send_packet('n30', 'n03')
     n30 = node_mapping['n30']
-    assert len(n30.get_queue_state()
+    assert len(n30.get_queue_state('n21')
                ) == 1, 'n30 should have one packet in queue'
-    packet = n30.get_queue_state()[0]
+    for n in ['n31', 'n20']:
+        assert len(n30.get_queue_state(n)) == 0, n + \
+            ' should not have any packets in n30\'s queue'
+    packet = n30.get_queue_state('n21')[0]
     assert packet.get_path() == ['n30', 'n21', 'n12',
                                  'n03'], 'shortest path is wrong'
 
-    arena.run()
+    arena.run(override=True)
     for n in ['n11', 'n01', 'n10', 'n21', 'n31', 'n20']:
-        assert len(node_mapping[n].get_queue_state()
-                   ) == 1, n + ' should have one packet in queue after one timestep'
-
-    # TODO: I'm not entirely sure what to do with the other nodes that are not on the path
-    # but get the packet anyway ... will test that here after we discuss though
+        if n == 'n11' or n == 'n21':
+            assert get_packets_in_queues(node_mapping[n].get_all_queues()
+                                         ) == 1, n + ' should have one packet in queue after one timestep'
+        else:
+            assert get_packets_in_queues(node_mapping[n].get_all_queues()
+                                         ) == 0, n + ' should have no packets in queue after one timestep'
+            assert len(node_mapping[n].get_packet_pool(
+            )) == 1, 'node should have one packet in its pool'
 
 
 def test_collision() -> None:
@@ -148,26 +154,34 @@ def test_collision() -> None:
 
     arena.send_packet('n1', 'n2')
     arena.send_packet('n1', 'n2')
-    n1_first = n1.get_queue_state()[0]
+    n1_first = n1.get_queue_state('n2')[0]
     arena.send_packet('n3', 'n2')
-    n3_first = n3.get_queue_state()[0]
-    arena.run()  # should have a collision, so no queues are changed
+    n3_first = n3.get_queue_state('n2')[0]
+    # should have a collision, so no queues are changed
+    arena.run(override=True)
 
-    if len(n1.get_queue_state()) == 1:
-        assert len(n3.get_queue_state()
-                   ) == 2, 'if n1 sent, then n3 should not have sent'
-        assert n3.get_queue_state(
-        )[0] == n3_first, 'makes sure the same packet is at n3\'s head'
-    elif len(n3.get_queue_state()) == 0:
-        assert len(n1.get_queue_state()
-                   ) == 3, 'n1 should have not sent, and received a packet'
-        assert n1.get_queue_state()[
+    if get_packets_in_queues(n1.get_all_queues()) == 1:
+        assert len(n3.get_queue_state('n2')
+                   ) == 1, 'if n1 sent, then n3 should not have sent'
+        assert len(n3.get_packet_pool()
+                   ) == 1, 'n3 should have one packet in its pool'
+        assert n3.get_queue_state('n2'
+                                  )[0] == n3_first, 'makes sure the same packet is at n3\'s head'
+    elif get_packets_in_queues(n3.get_all_queues()) == 0:
+        assert len(n1.get_queue_state('n2')
+                   ) == 2, 'n1 should have not sent, and received a packet'
+        assert len(n1.get_packet_pool()
+                   ) == 1, 'n1 should have one packet in its pool'
+        assert n1.get_queue_state('n2')[
             0] == n1_first, 'expected to the same packet to be at the head of n1\'s queue'
     else:
         raise AssertionError('neither queue sent anything')
 
+    arena.run(override=True)
+
     n2 = node_mapping['n2']
-    assert len(n2.get_queue_state()) == 1, 'n2 should have gotten a packet'
+    assert get_packets_in_queues(
+        n2.get_all_queues()) == 1, 'n2 should have gotten a packet'
 
     return
 
@@ -186,17 +200,24 @@ def test_hidden_terminal() -> None:
 
     arena.send_packet('n1', 'n2')
     arena.send_packet('n1', 'n2')
-    n1_first = n1.get_queue_state()[0]
+    n1_first = n1.get_queue_state('n2')[0]
     arena.send_packet('n3', 'n2')
-    n3_first = n3.get_queue_state()[0]
-    arena.run()  # should have a hidden terminal instance occur, so no queues are changed
+    n3_first = n3.get_queue_state('n2')[0]
+    # should have a hidden terminal instance occur, so no queues are changed
+    arena.run(override=True)
 
-    assert len(n1.get_queue_state()
+    assert len(n1.get_queue_state('n2')
                ) == 1, 'expected length of n1\'s queue to be 1'
-    assert len(n3.get_queue_state()
+    assert len(n3.get_queue_state('n2')
                ) == 0, 'expected length of n3\'s queue to be 0'
     n2 = node_mapping['n2']
-    assert len(n2.get_queue_state()) == 0, 'n2 should not have gotten a packet'
+    for _ in range(5):
+        arena.run(override=True)
+        assert get_packets_in_queues(n2.get_all_queues()
+                                     ) == 0, 'n2 should not have gotten a packet'
+    arena.run(override=True)
+    assert get_packets_in_queues(n2.get_all_queues()
+                                 ) == 1, 'n2 should be responding now'
     return
 
 
@@ -220,5 +241,5 @@ def test_priority_nodes() -> None:
     arena.run(override=True)
 
     for n in ['n1', 'n2']:
-        assert len(node_mapping[n].get_queue_state()
-                   ) == 1, 'each node should have sent once'
+        assert get_packets_in_queues(node_mapping[n].get_all_queues()
+                                     ) == 1, 'each node should have sent once'

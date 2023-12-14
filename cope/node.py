@@ -112,7 +112,13 @@ class Node:
         """
         Tells this node the timestep that the arena is currently on. Updates the queue if it should 
         """
-        pass
+        if timestep not in self.waiting_for_response:
+            return
+
+        response_packet = self.waiting_for_response.pop(timestep)
+        path = response_packet.get_path()
+        self.queues[path[1]].append((response_packet, timestep))
+        return
 
     def get_next_destination(self) -> str:
         """

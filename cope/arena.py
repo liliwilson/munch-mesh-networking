@@ -142,7 +142,7 @@ class Arena:
             # if not node_queue:  # TODO: NEED TO CHANGE WRT cope nodes
             #     continue
 
-            if all(len(q) == 0 for _, q in node_obj.get_all_queues()):
+            if all(len(q) == 0 for _, q in node_obj.get_all_queues().items()):
                 # checks if all queues are empty
                 continue
 

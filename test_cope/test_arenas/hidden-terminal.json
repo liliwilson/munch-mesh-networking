@@ -12,5 +12,5 @@
     }
   },
   "rules": [["type1", "type1"]],
-  "responseWaitTime": 1
+  "responseWaitTime": 5
 }
