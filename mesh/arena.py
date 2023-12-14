@@ -168,14 +168,6 @@ class Arena:
 
         return per_node_metrics
 
-        # get metrics after running
-        # throughput: across nodes, sum packets received
-        # measure packet loss? sum packets sent
-        # latency: across nodes, average timestep received - timestep sent
-        # fairness: compare things across nodes, also compare to # hops away from supernode
-
-        return {}
-
     def run(self, override=False) -> None:
         """
         Steps the arena for one timestep

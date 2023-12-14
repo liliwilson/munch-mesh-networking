@@ -5,7 +5,7 @@ from .link import Link
 
 class Node:
 
-    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int, storage_size: float) -> None:
+    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int, packet_pool_expiration: float) -> None:
         """
         Creates a node object
         """
@@ -14,7 +14,6 @@ class Node:
         self.hierarchy_class: str = hierarchy_class
         self.transmit_distance: float = transmit_distance
         self.response_wait_time: int = response_wait_time
-        self.storage_size: float = storage_size
 
         self.links: dict[str, Link] = {}
 
@@ -25,6 +24,7 @@ class Node:
         self.received_packets = 0
         self.packet_pool = {}
         self.neighbor_state: dict[str, set[int]] = {}
+        self.packet_pool_expiration: int = packet_pool_expiration
 
     def add_link(self, other: "Node") -> None:
         """
@@ -104,8 +104,9 @@ class Node:
         Cleans up hidden terminal collisions for sus nodes
         """
         if list(self.packet_pool.values()).count(timestep) > 1:
-            self.packet_pool = {p: t for p,
-                                t in self.packet_pool.items() if t != timestep}
+            self.packet_pool = {p: t for p, t in self.packet_pool.items()
+                                if t != timestep and
+                                timestep - t < self.packet_pool_expiration}
         return
 
     def receive_reception_report(self, report: ReceptionReport) -> None:
