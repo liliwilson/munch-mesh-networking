@@ -22,6 +22,7 @@ class Arena:
             hierarchies = data['hierarchies']
 
         response_wait_time: int = data['responseWaitTime']
+        packet_pool_expiration: int = data['packet_pool_expiration'] if 'packet_pool_expiration' in data else 10
 
         rules = {h: set() for h in hierarchies}
         for t1, t2 in data_rules:
@@ -44,7 +45,7 @@ class Arena:
                 x = node_obj['x']
                 y = node_obj['y']
                 node = Node(mac_addr, x, y, hierarchy,
-                            transmit_distance, response_wait_time, 0)
+                            transmit_distance, response_wait_time, packet_pool_expiration)
 
                 for link_class in rules[hierarchy]:
                     # if linked to own class, check against current list of MACs
