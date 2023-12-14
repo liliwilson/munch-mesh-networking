@@ -99,6 +99,15 @@ class Node:
 
         return
 
+    def cleanup(self, timestep: int) -> None:
+        """
+        Cleans up hidden terminal collisions for sus nodes
+        """
+        if list(self.packet_pool.values()).count(timestep) > 1:
+            self.packet_pool = {p: t for p,
+                                t in self.packet_pool.items() if t != timestep}
+        return
+
     def receive_reception_report(self, report: ReceptionReport) -> None:
         """
         Updates self's state based on the reception report

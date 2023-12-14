@@ -176,6 +176,7 @@ class Arena:
         # this bit tells nodes whether they should create a response packet
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
+            node_obj.cleanup(self.timestep)
             node_obj.learn_timestep(self.timestep)
 
         self.timestep += 1
