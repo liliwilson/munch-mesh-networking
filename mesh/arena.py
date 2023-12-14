@@ -4,7 +4,7 @@ from .node import Node
 from .packet import Packet
 import json
 import heapq
-
+import random
 
 class Arena:
 
@@ -28,7 +28,7 @@ class Arena:
             rules[t2].add(t1)
 
         # mapping of hierarchies to list MAC addresses
-        self.hierarchy_dict: dict[str, str] = {}
+        self.hierarchy_dict: dict[str, list[str]] = {}
 
         # mapping of MAC addresses to nodes
         self.node_dict: dict[str, Node] = {}
@@ -122,10 +122,58 @@ class Arena:
         packet = Packet(0, is_two_way, best_path)
         self.node_dict[src_node].enqueue_packet(packet, self.timestep)
 
-    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:
+    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1) -> dict[str, float]:
         """
         Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
+        
+        To simulate data streams, will queue random number of packets between min_stream_size and max_stream_size.
         """
+        probability_send = 0.1
+        while self.timestep < timesteps:
+            # queue messages
+            for end_user in self.hierarchy_dict[end_user_hierarchy_class]:
+                # randomly pick a supernode to send to
+                internet_enabled_node = random.choice(self.hierarchy_dict[internet_enabled_hierarchy_class])
+                
+                # with random probability, send a flow
+                if random.random() < probability_send:
+                    num_packets_in_flow = random.randint(min_stream_size, max_stream_size)
+                    for _ in range(num_packets_in_flow):
+                        self.send_packet(end_user, internet_enabled_node)
+                    
+            self.run()
+
+        # get metrics
+        per_node_metrics = {}
+        for node_mac, node in self.node_dict.items():
+            sent = node.get_sent()
+            received = node.get_received()
+
+            packet_drops, packet_successes = 0, 0
+            latencies = []
+            for packet_id in sent:
+                if packet_id not in received:
+                    packet_drops += 1
+                else:
+                    packet_successes += 1
+                    latencies.append(received[packet_id] - sent[packet_id])
+
+            per_node_metrics[node_mac] = {
+                'successes': packet_successes,
+                'throughput': packet_successes / timesteps,
+                'drops': packet_drops,
+                'average_latency': sum(latencies)/len(latencies) if len(latencies) > 0 else 0
+            }
+        
+        return per_node_metrics
+
+
+        # get metrics after running
+            # throughput: across nodes, sum packets received
+                # measure packet loss? sum packets sent
+            # latency: across nodes, average timestep received - timestep sent
+            # fairness: compare things across nodes, also compare to # hops away from supernode
+
         return {}
 
     def run(self, override=False) -> None:

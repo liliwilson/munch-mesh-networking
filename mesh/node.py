@@ -21,7 +21,8 @@ class Node:
         self.links: dict[str, Link] = {}
 
         self.queue: list[tuple[Packet, int]] = []
-        self.sent = set()
+        self.sent = {}
+        self.received = {}
         self.waiting_for_response: dict[int, Packet] = {}
         self.received_packets = 0
 
@@ -51,11 +52,11 @@ class Node:
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
         if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()): 
-            # TODO: add in metrics here
+            self.received[packet.get_id()] = timestep
             self.received_packets += 1
             return
         elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
-            self.sent.add(packet.get_id()) # TODO do we also want to track time of sending?
+            self.sent[packet.get_id()] = timestep
             self.queue.append((packet, timestep))
         elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
             self.waiting_for_response[timestep +
@@ -154,6 +155,12 @@ class Node:
             return 0
 
         return self.links[neighbor].get_probability()
+
+    def get_sent(self) -> dict[str, str]:
+        return {k: v for k,v in self.sent.items()}
+
+    def get_received(self) -> dict[str, str]:
+        return {k: v for k,v in self.received.items()}
 
     def __str__(self) -> str:
         """
