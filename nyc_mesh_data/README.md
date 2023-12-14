@@ -1,1 +1,0 @@
-Data in this directory pulled from https://github.com/nycmeshnet/network-map/tree/master/src/data, updated as of December 13, 2023.
