@@ -1,5 +1,6 @@
 import typing
 import json
+import heapq
 
 from .link import Link
 from .node import Node
@@ -80,11 +81,46 @@ class Arena:
         """
         return self.node_dict[node1].is_linked(node2) and self.node_dict[node2].is_linked(node1)
 
-    def send_packet(self, src_node: str, dest_node: str) -> None:
+    def send_packet(self, src_node: str, dst_node: str, is_two_way: bool = True) -> None:
         """
         Initiates a packet send from a source node, to a given a destination node.
         """
-        pass
+        if src_node == dst_node:
+            return
+
+        probabilities = {node: 0 for node in self.node_dict.keys()}
+        probabilities[src_node] = -1
+        predecessors = {node: None for node in self.node_dict.keys()}
+
+        priority_queue = [(-1, src_node)]
+
+        while priority_queue:
+            current_prob, current_node = heapq.heappop(priority_queue)
+            if current_prob > probabilities[current_node]:
+                continue
+
+            if current_node == dst_node:
+                break
+
+            node_obj = self.node_dict[current_node]
+            for neighbor in node_obj.get_neighbors():
+                new_prob = current_prob * node_obj.get_probability(neighbor)
+                neighbor_prob = probabilities[neighbor]
+
+                if new_prob < neighbor_prob:
+                    probabilities[neighbor] = new_prob
+                    predecessors[neighbor] = current_node
+                    heapq.heappush(priority_queue, (new_prob, neighbor))
+
+        best_path = []
+        current_node = dst_node
+        while current_node is not None:
+            best_path.insert(0, current_node)
+            current_node = predecessors[current_node]
+
+        # TODO do we want to set storage size as a constant, or input to arena?
+        packet = Packet(0, is_two_way, best_path)
+        self.node_dict[src_node].enqueue_packet(packet, self.timestep)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:
         """
@@ -92,11 +128,57 @@ class Arena:
         """
         pass
 
-    def run() -> None:
+    def run(self, override=False) -> None:
         """
-        Steps arena one timestep
+        Steps the arena for one timestep
         """
-        pass
+        sending: list[Node] = []
+        nexthops = set()
+        ht = set()
+
+        for node in self.active_node_list:
+            node_obj = self.node_dict[node]
+            # node_queue = node_obj.get_queue_state()
+            # if not node_queue:  # TODO: NEED TO CHANGE WRT cope nodes
+            #     continue
+
+            if all(len(q) == 0 for _, q in node_obj.get_all_queues()):
+                # checks if all queues are empty
+                continue
+
+            # check if medium is free by comparing to nodes in sending
+            for sender in sending:
+                # checks if either one is in range of the other
+                if node_obj.in_range(*sender.get_position()):
+                    break
+                elif sender.in_range(*node_obj.get_position()):
+                    break
+            else:
+                sending.append(node_obj)
+                nexthop = node_obj.get_next_destination()  # TODO: MIGHT NEED TO CHANGE
+                if nexthop in nexthops:
+                    ht.add(nexthop)
+                else:
+                    nexthops.add(nexthop)
+
+        for ht_node in ht:
+            nexthops.remove(ht_node)
+
+        for sender in sending:
+            dest = sender.get_next_destination()
+            sender.send_from_queues(
+                self.timestep, bool(dest in ht), override)
+
+        for sender in sending:
+            self.active_node_list.remove(sender.get_mac())
+            self.active_node_list.append(sender.get_mac())
+
+        # this bit tells nodes whether they should create a response packet
+        for node in self.active_node_list:
+            node_obj = self.node_dict[node]
+            node_obj.learn_timestep(self.timestep)
+
+        self.timestep += 1
 
     def get_nodes(self) -> dict[str, Node]:
         """

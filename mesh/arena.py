@@ -6,6 +6,7 @@ import json
 import heapq
 import random
 
+
 class Arena:
 
     def __init__(self, filename: str) -> None:
@@ -84,7 +85,6 @@ class Arena:
         """
         Initiates a packet send from a source node, to a given a destination node.
         """
-        # TODO do we want to define behavior for if start and end equal
         if src_node == dst_node:
             return
 
@@ -125,21 +125,23 @@ class Arena:
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1, probability_send: float = 0.01) -> dict[str, float]:
         """
         Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
-        
+
         To simulate data streams, will queue random number of packets between min_stream_size and max_stream_size, and at any timestep the probability that a sender node will enqueue a new message is equal to probability_send.
         """
         while self.timestep < timesteps:
             # queue messages
             for end_user in self.hierarchy_dict[end_user_hierarchy_class]:
                 # randomly pick a supernode to send to
-                internet_enabled_node = random.choice(self.hierarchy_dict[internet_enabled_hierarchy_class])
-                
+                internet_enabled_node = random.choice(
+                    self.hierarchy_dict[internet_enabled_hierarchy_class])
+
                 # with random probability, send a flow
                 if random.random() < probability_send:
-                    num_packets_in_flow = random.randint(min_stream_size, max_stream_size)
+                    num_packets_in_flow = random.randint(
+                        min_stream_size, max_stream_size)
                     for _ in range(num_packets_in_flow):
                         self.send_packet(end_user, internet_enabled_node)
-                    
+
             self.run()
 
         # get metrics
@@ -163,15 +165,14 @@ class Arena:
                 'drops': packet_drops,
                 'average_latency': sum(latencies)/len(latencies) if len(latencies) > 0 else float('inf')
             }
-        
+
         return per_node_metrics
 
-
         # get metrics after running
-            # throughput: across nodes, sum packets received
-                # measure packet loss? sum packets sent
-            # latency: across nodes, average timestep received - timestep sent
-            # fairness: compare things across nodes, also compare to # hops away from supernode
+        # throughput: across nodes, sum packets received
+        # measure packet loss? sum packets sent
+        # latency: across nodes, average timestep received - timestep sent
+        # fairness: compare things across nodes, also compare to # hops away from supernode
 
         return {}
 
@@ -181,7 +182,7 @@ class Arena:
         """
         sending: list[Node] = []
         nexthops = set()
-        ht = set() 
+        ht = set()
 
         for node in self.active_node_list:
             node_obj = self.node_dict[node]

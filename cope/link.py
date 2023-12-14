@@ -1,6 +1,6 @@
 from typing import Any
 import random
-from .packet import Packet
+from .packet import COPEPacket
 
 
 class Link:
@@ -9,15 +9,28 @@ class Link:
         """
         Creates a link object between node1 and node2. 
         """
-        pass
+        self.node1 = node1
+        self.node2 = node2
 
-    def transmit(self, packet: Packet, source: str) -> bool:
+    def transmit(self, packet: COPEPacket, source: str, timestep: int, override: bool) -> bool:
         """
         Given a packet and a source MAC address, returns True iff the destination node receives the packet.
 
         Determined based on distance between nodes and strengths of the nodes. 
         """
-        pass
+        success = random.random() < self.get_probability()
+        if override:
+            success = True
+        if not success:
+            return success
+        elif source == self.node1.get_mac():
+            self.node2.receive_cope_packet(packet, timestep)
+        elif source == self.node2.get_mac():
+            self.node1.receive_cope_packet(packet, timestep)
+        else:
+            raise ValueError(
+                "node must be connected to link to transmit over it")
+        return success
 
     def get_probability(self) -> float:
         """

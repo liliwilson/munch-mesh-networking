@@ -2,6 +2,14 @@ from cope.arena import Arena
 from cope.packet import Packet
 
 
+def get_packets_in_queues(queues: dict[str, Packet]):
+    """
+    Given a dict mapping a node's mac address to that neighbor queue, returns the total 
+    number of packets in the queue in total
+    """
+    return sum(len(q) for q in queues.values())
+
+
 def test_parse() -> None:
     """
     Tests parsing of a simple one-node arena
@@ -38,19 +46,27 @@ def test_wheel_top() -> None:
 
     arena.send_packet('n1', 'n2')
     n1 = node_mapping['n1']
-    n2 = node_mapping['n2']
-    assert len(n1.get_queue_state()) == 1, 'n1 should have one packet in queue'
-    packet = n1.get_queue_state()[0]
+    n1_queues = n1.get_all_queues()
+    for n in ['n2', 'n3', 'n4', 'n5']:
+        if n == 'n2':
+            assert len(
+                n1_queues[n]) == 1, 'there should be one packet in n1\'s queue to n2'
+        else:
+            assert len(n1_queues[n]) == 0, 'n1\'s queue to ' + \
+                n + ' should be empty'
+
+    packet = n1_queues['n2'][0][0]
     assert packet.get_is_request(), 'packet should be a request packet'
 
     arena.run()
 
     # TODO: what happens to the true receiver
-    for n in ['n2', 'n3', 'n4', 'n5']:
-        assert len(node_mapping[n].get_queue_state(
+    print(node_mapping['n3'].get_packet_pool())
+    for n in ['n3', 'n4', 'n5']:
+        assert len(node_mapping[n].get_packet_pool(
         )) == 1, 'all nodes should have received a packet'
 
-    arena.run()  # TODO: change this to have the parameters required
+    # arena.run()  # TODO: change this to have the parameters required
 
     return
 
