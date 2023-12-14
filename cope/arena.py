@@ -1,4 +1,6 @@
 import typing
+import json
+
 from .link import Link
 from .node import Node
 from .packet import Packet
@@ -13,7 +15,61 @@ class Arena:
             2. nodes of each type (identified by MAC address), and their locations as tuples
             3. rules for which types of nodes are allowed to connect to each other
         """
-        pass
+        with open(filename, 'r') as f:
+            data = json.load(f)
+            data_rules = data['rules']
+            hierarchies = data['hierarchies']
+
+        response_wait_time: int = data['responseWaitTime']
+
+        rules = {h: set() for h in hierarchies}
+        for t1, t2 in data_rules:
+            rules[t1].add(t2)
+            rules[t2].add(t1)
+
+        # mapping of hierarchies to list MAC addresses
+        self.hierarchy_dict: dict[str, list[str]] = {}
+
+        # mapping of MAC addresses to nodes
+        self.node_dict: dict[str, Node] = {}
+
+        for hierarchy in hierarchies:
+            transmit_distance = hierarchies[hierarchy]['strength']
+
+            list_of_macs = []
+
+            all_nodes = hierarchies[hierarchy]['nodes'][0]
+            for mac_addr, node_obj in all_nodes.items():
+                x = node_obj['x']
+                y = node_obj['y']
+                node = Node(mac_addr, x, y, hierarchy,
+                            transmit_distance, response_wait_time, 0)
+
+                for link_class in rules[hierarchy]:
+                    # if linked to own class, check against current list of MACs
+                    if link_class == hierarchy:
+                        for other in list_of_macs:
+                            node_other = self.node_dict[other]
+                            node.add_link(node_other)
+                            node_other.add_link(node)
+
+                    # otherwise, check amongst the already finalized hierarchy classes
+                    if link_class not in self.hierarchy_dict:
+                        continue
+                    for other in self.hierarchy_dict[link_class]:
+                        node_other = self.node_dict[other]
+                        node.add_link(node_other)
+                        node_other.add_link(node)
+
+                list_of_macs.append(mac_addr)
+
+                self.node_dict[mac_addr] = node
+
+            self.hierarchy_dict[hierarchy] = list_of_macs
+
+        self.active_node_list: list[str] = list(self.node_dict.keys())
+        self.timestep: int = 0
+        self.packets_queued: int = 0
 
     def can_link(self, node1: str, node2: str) -> bool:
         """
@@ -22,7 +78,7 @@ class Arena:
         This involves checking if they are allowed to connect, as well as if they are close enough together
         that, given their power capabilities, they can reach one another.
         """
-        pass
+        return self.node_dict[node1].is_linked(node2) and self.node_dict[node2].is_linked(node1)
 
     def send_packet(self, src_node: str, dest_node: str) -> None:
         """
@@ -30,8 +86,20 @@ class Arena:
         """
         pass
 
-    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> typing.Dict[str, float]:
+    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str) -> dict[str, float]:
         """
         Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
         """
         pass
+
+    def run() -> None:
+        """
+        Steps arena one timestep
+        """
+        pass
+
+    def get_nodes(self) -> dict[str, Node]:
+        """
+        Returns a dict mapping MAC addresses to node objects for all nodes in this arena
+        """
+        return {k: v for k, v in self.node_dict.items()}

@@ -15,7 +15,7 @@ def test_wheel_top() -> None:
     """
     Tests a wheel topology network where the nodes should be linked.
     """
-    arena = Arena("./test_cope/test_arenas/wheet-top.json")
+    arena = Arena("./test_cope/test_arenas/wheel-top.json")
     node_mapping = arena.get_nodes()
     for n in ['n1', 'n2', 'n3', 'n4', 'n5']:
         assert n in node_mapping, "Wrong nodes in network"
