@@ -243,3 +243,15 @@ def test_priority_nodes() -> None:
     for n in ['n1', 'n2']:
         assert get_packets_in_queues(node_mapping[n].get_all_queues()
                                      ) == 1, 'each node should have sent once'
+
+def test_sim_collision() -> None:
+    """
+    Test simulation and metrics getting for the collision example.
+    """
+    arena = Arena("./test_mesh/test_arenas/collision.json")
+    metrics = arena.simulate(100, 'type1', 'type3', probability_send=0.1)
+    n1_metrics = metrics['n1']
+
+    assert n1_metrics['successes'] > 0
+    assert n1_metrics['average_latency'] > 1
+    assert n1_metrics['throughput'] <= 1 and n1_metrics['throughput'] >= 0

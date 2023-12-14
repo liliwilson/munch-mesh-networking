@@ -26,6 +26,8 @@ class Node:
         self.neighbor_state: dict[str, set[int]] = {}
         self.packet_pool_expiration: int = packet_pool_expiration
 
+        self.coded_packets_history: list[tuple[list[int], int]] = []
+
     def add_link(self, other: "Node") -> None:
         """
         Adds a link from self to other and creates a queue for that neighbor in self.
@@ -92,6 +94,10 @@ class Node:
                 new_packet = packet
             elif new_packet is not None:  # Too many unknown packets
                 return
+
+        # we have already seen all packets encoded here
+        if new_packet is None:
+            return
 
         self.packet_pool[(new_packet.get_id(),
                           new_packet.get_is_request())] = timestep
@@ -166,6 +172,8 @@ class Node:
 
         cope_packet = COPEPacket(packets, ReceptionReport(
             set(self.packet_pool), self.mac_address))
+
+        self.coded_packets_history.append(([packet.get_id() for packet in packets], timestep))
 
         for nexthop in self.links:
             self.links[nexthop].transmit(
@@ -242,6 +250,9 @@ class Node:
         return list(self.links.keys())
 
     def get_probability(self, neighbor: str) -> float:
+        """
+        Return the probability that a transmission to a neighbor will succeed.
+        """
         if not neighbor in self.links:
             return 0
 
@@ -252,6 +263,24 @@ class Node:
         Returns the packet pool of self
         """
         return self.packet_pool
+    
+    def get_sent(self) -> dict[str, str]:
+        """
+        Return a dictionary of packets sent by this node and their timesteps
+        """
+        return {k: v for k,v in self.sent.items()}
+
+    def get_received(self) -> dict[str, str]:
+        """
+        Return a dictionary of packets received by this node and their timesteps
+        """
+        return {k: v for k,v in self.received.items()}
+
+    def get_coded_packets_history(self) -> list[tuple[list[int], int]]:
+        """
+        Return the packet coding history for this node. 
+        """
+        return [(entry[0][:], entry[1]) for entry in self.coded_packets_history]
 
     def __str__(self) -> str:
         """

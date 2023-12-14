@@ -151,15 +151,24 @@ class Node:
         return list(self.links.keys())
 
     def get_probability(self, neighbor: str) -> float:
+        """
+        Return the probability that a transmission to a neighbor will succeed.
+        """
         if not neighbor in self.links:
             return 0
 
         return self.links[neighbor].get_probability()
 
     def get_sent(self) -> dict[str, str]:
+        """
+        Return a dictionary of packets sent by this node and their timesteps
+        """
         return {k: v for k,v in self.sent.items()}
 
     def get_received(self) -> dict[str, str]:
+        """
+        Return a dictionary of packets received by this node and their timesteps
+        """
         return {k: v for k,v in self.received.items()}
 
     def __str__(self) -> str:
