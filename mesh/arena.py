@@ -122,13 +122,12 @@ class Arena:
         packet = Packet(0, is_two_way, best_path)
         self.node_dict[src_node].enqueue_packet(packet, self.timestep)
 
-    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1) -> dict[str, float]:
+    def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1, probability_send: float = 0.01) -> dict[str, float]:
         """
         Simulates the arena for a given number of timesteps, with nodes from the end_user_hierarchy_class sending packets, and users from the internet_enabled_hierarchy_class will receive packets.
         
-        To simulate data streams, will queue random number of packets between min_stream_size and max_stream_size.
+        To simulate data streams, will queue random number of packets between min_stream_size and max_stream_size, and at any timestep the probability that a sender node will enqueue a new message is equal to probability_send.
         """
-        probability_send = 0.1
         while self.timestep < timesteps:
             # queue messages
             for end_user in self.hierarchy_dict[end_user_hierarchy_class]:
@@ -162,7 +161,7 @@ class Arena:
                 'successes': packet_successes,
                 'throughput': packet_successes / timesteps,
                 'drops': packet_drops,
-                'average_latency': sum(latencies)/len(latencies) if len(latencies) > 0 else 0
+                'average_latency': sum(latencies)/len(latencies) if len(latencies) > 0 else float('inf')
             }
         
         return per_node_metrics

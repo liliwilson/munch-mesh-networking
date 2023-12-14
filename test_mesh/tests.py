@@ -225,3 +225,28 @@ def test_links() -> None:
     Tests some link probabilities based on how far they are.  
     """
     return
+
+def test_sim_collision() -> None:
+    """
+    Test simulation and metrics getting for the collision example.
+    """
+    arena = Arena("./test_mesh/test_arenas/collision.json")
+    metrics = arena.simulate(100, 'type1', 'type3', probability_send=0.1)
+    n1_metrics = metrics['n1']
+
+    assert n1_metrics['successes'] > 0
+    assert n1_metrics['average_latency'] > 1
+    assert n1_metrics['throughput'] <= 1 and n1_metrics['throughput'] >= 0
+
+def test_sim_hidden_terminals() -> None:
+    """
+    Test simulation and metrics getting for the hidden terminals example.
+    """
+    arena = Arena("./test_mesh/test_arenas/hidden-terminal.json")
+
+    metrics = arena.simulate(100, 'type1', 'type1', probability_send=0.1)
+
+    for _, node in metrics.items():
+        assert node['average_latency'] > 1
+        assert node['throughput'] <= 1 and node['throughput'] >= 0
+        assert node['drops'] > 0
