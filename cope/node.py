@@ -123,7 +123,7 @@ class Node:
         """
         node = report.get_node()
         packets = report.get_packets()
-        self.neighbor_state[node] = self.neighbor_state[node].union(packets)
+        self.neighbor_state[node] = set(packets)
         return
 
     def learn_timestep(self, timestep: int) -> None:
