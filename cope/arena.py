@@ -144,6 +144,7 @@ class Arena:
 
             if all(len(q) == 0 for _, q in node_obj.get_all_queues().items()):
                 # checks if all queues are empty
+                node_obj.send_reception_report(self.timestep, override)
                 continue
 
             # check if medium is free by comparing to nodes in sending

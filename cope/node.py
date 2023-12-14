@@ -172,6 +172,17 @@ class Node:
 
         return
 
+    def send_reception_report(self, timestep: int, override: bool) -> None:
+        """
+        Node sends a reception report to all its neighbors
+        """
+        report = ReceptionReport(
+            set(p for p in self.packet_pool), self.mac_address)
+        for _, link in self.links.items():
+            link.transmit_reception_report(
+                report, self.mac_address, timestep, override)
+        return
+
     def is_linked(self, other: str) -> bool:
         """
         Given the MAC address of another node, returns True iff there is a link between self and other.

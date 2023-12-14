@@ -1,6 +1,6 @@
 from typing import Any
 import random
-from .packet import COPEPacket
+from .packet import COPEPacket, ReceptionReport
 
 
 class Link:
@@ -27,6 +27,26 @@ class Link:
             self.node2.receive_cope_packet(packet, timestep)
         elif source == self.node2.get_mac():
             self.node1.receive_cope_packet(packet, timestep)
+        else:
+            raise ValueError(
+                "node must be connected to link to transmit over it")
+        return success
+
+    def transmit_reception_report(self, report: ReceptionReport, source: str, timestep: int, override: bool) -> bool:
+        """
+        Given a reception report and a source MAC address, returns True iff the destination node receives the report.
+
+        Determined based on distance between nodes and strengths of the nodes. 
+        """
+        success = random.random() < self.get_probability()
+        if override:
+            success = True
+        if not success:
+            return success
+        elif source == self.node1.get_mac():
+            self.node2.receive_reception_report(report)
+        elif source == self.node2.get_mac():
+            self.node1.receive_reception_report(report)
         else:
             raise ValueError(
                 "node must be connected to link to transmit over it")
