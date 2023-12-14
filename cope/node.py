@@ -22,7 +22,7 @@ class Node:
         self.waiting_for_response: dict[int, Packet] = {}
         self.received = {}
         self.received_packets = 0
-        self.packet_pool = {}
+        self.packet_pool: dict[tuple(str, bool)] = {}
         self.neighbor_state: dict[str, set[int]] = {}
         self.packet_pool_expiration: int = packet_pool_expiration
 
@@ -48,7 +48,6 @@ class Node:
 
     def enqueue_packet(self, packet: Packet, timestep: int) -> None:
         """
-        TODO: needs to be changed to deal with one queue for each neighbor
         Enqueues the given packet.
 
         If self is destination of packet, check if self sent packet with this packet id. 
@@ -76,7 +75,7 @@ class Node:
             nexthop = path[path.index(self.mac_address) + 1]
             self.queues[nexthop].append((packet, timestep))
         # should always be putting a packet that we enqueue into our pool
-        self.packet_pool[packet.get_id()] = timestep
+        self.packet_pool[(packet.get_id(), packet.get_is_request())] = timestep
         return
 
     def receive_cope_packet(self, cope_packet: COPEPacket, timestep: int) -> None:
@@ -89,12 +88,13 @@ class Node:
         packets = cope_packet.get_packets()
         new_packet = None
         for packet in packets:
-            if packet.get_id() not in self.packet_pool and new_packet is None:
+            if (packet.get_id(), packet.get_is_request()) not in self.packet_pool and new_packet is None:
                 new_packet = packet
             elif new_packet is not None:  # Too many unknown packets
                 return
 
-        self.packet_pool[new_packet.get_id()] = timestep
+        self.packet_pool[(new_packet.get_id(),
+                          new_packet.get_is_request())] = timestep
         self.enqueue_packet(new_packet, timestep)
 
         return
