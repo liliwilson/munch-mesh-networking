@@ -62,6 +62,7 @@ class Node:
             return
         # initiating a send
         elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
+            self.packet_pool[(packet.get_id(), packet.get_is_request())] = timestep
             self.sent[packet.get_id()] = timestep
             self.queues[packet.get_path()[1]].append((packet, timestep))
         elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():

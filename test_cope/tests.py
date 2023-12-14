@@ -248,9 +248,23 @@ def test_sim_collision() -> None:
     """
     Test simulation and metrics getting for the collision example.
     """
-    arena = Arena("./test_mesh/test_arenas/collision.json")
+    arena = Arena("./test_cope/test_arenas/collision.json")
     metrics = arena.simulate(100, 'type1', 'type3', probability_send=0.1)
     n1_metrics = metrics['n1']
+
+    assert n1_metrics['successes'] > 0
+    assert n1_metrics['average_latency'] > 1
+    assert n1_metrics['throughput'] <= 1 and n1_metrics['throughput'] >= 0
+
+def test_sim_wheel_top() -> None:
+    """
+    Test simulation and metrics getting for the collision example.
+    """
+    arena = Arena("./test_cope/test_arenas/wheel-top.json")
+    metrics = arena.simulate(100, 'type2', 'type2', probability_send=0.1)
+    n1_metrics = metrics['n1']
+
+    print(metrics)
 
     assert n1_metrics['successes'] > 0
     assert n1_metrics['average_latency'] > 1
