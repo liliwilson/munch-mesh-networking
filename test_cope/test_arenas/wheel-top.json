@@ -18,5 +18,6 @@
       ]
     }
   },
-  "rules": [["type1", "type2"]]
+  "rules": [["type1", "type2"]],
+  "responseWaitTime": 1
 }
