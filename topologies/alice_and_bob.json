@@ -1,7 +1,7 @@
 {
   "hierarchies": {
     "type1": {
-      "strength": 25,
+      "strength": 1000000,
       "nodes": [
         {
           "n1": { "x": 0, "y": 0 },
@@ -10,7 +10,7 @@
       ]
     },
     "type2": {
-      "strength": 25,
+      "strength": 1000000,
       "nodes": [
         {
           "n2": { "x": 1, "y": 0 }
@@ -19,5 +19,6 @@
     }
   },
   "rules": [["type1", "type2"]],
-  "responseWaitTime": 1
+  "responseWaitTime": 1,
+  "packetPoolExpiration": 100
 }

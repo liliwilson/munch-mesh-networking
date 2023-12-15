@@ -85,7 +85,7 @@ class Node:
         for packet in packets:
             if (packet.get_id(), packet.get_is_request()) not in self.packet_pool and new_packet is None:
                 new_packet = packet
-            elif new_packet is not None:  # Too many unknown packets
+            elif (packet.get_id(), packet.get_is_request()) not in self.packet_pool and new_packet is not None:  # Too many unknown packets
                 return
 
         # we have already seen all packets encoded here
@@ -102,9 +102,9 @@ class Node:
         Cleans up hidden terminal collisions for nodes in promiscuous mode
         """
         if list(self.packet_pool.values()).count(timestep) > 1:
-            self.packet_pool = {p: t for p, t in self.packet_pool.items()
-                                if t != timestep and
-                                timestep - t < self.packet_pool_expiration}
+            self.packet_pool = {p: t for p, t in self.packet_pool.items() if t != timestep}
+        
+        self.packet_pool = {p: t for p, t in self.packet_pool.items() if timestep - t < self.packet_pool_expiration}
         return
 
     def receive_reception_report(self, report: ReceptionReport) -> None:
@@ -156,9 +156,11 @@ class Node:
         if hidden_terminal:
             return
         for neighbor, q in self.queues.items():  # adds all packets to the copepacket
-            if q and all((p.get_id(), p.get_is_request()) in self.neighbor_state[neighbor] for p in packets):
-                packets.append(q.pop(0)[0])
-                nexthops.append(neighbor)
+            if neighbor not in nexthops:
+                if q and all((p.get_id(), p.get_is_request()) in self.neighbor_state[neighbor] for p in packets):
+                    print("ayo")
+                    packets.append(q.pop(0)[0])
+                    nexthops.append(neighbor)
 
         for neighbor in nexthops:  # this ensures fairness, so we are not just encoding the same people
             self.neighbor_state[neighbor] = self.neighbor_state.pop(neighbor)

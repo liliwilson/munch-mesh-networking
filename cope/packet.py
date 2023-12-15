@@ -58,6 +58,11 @@ class Packet:
             return False
         return True
 
+    def __repr__(self) -> str:
+        """
+        your mom 
+        """
+        return f'({self.packet_id}, {self.is_request}, {self.path_to_dst})'
 
 class ReceptionReport:
 

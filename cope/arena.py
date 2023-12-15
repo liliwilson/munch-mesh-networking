@@ -22,7 +22,7 @@ class Arena:
         data_rules = data['rules']
         hierarchies = data['hierarchies']
         response_wait_time: int = data['responseWaitTime']
-        packet_pool_expiration: int = data['packet_pool_expiration'] if 'packet_pool_expiration' in data else 10
+        packet_pool_expiration: int = data['packetPoolExpiration'] if 'packetPoolExpiration' in data else 10
 
         rules = {h: set() for h in hierarchies}
         for t1, t2 in data_rules:
