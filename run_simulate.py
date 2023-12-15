@@ -4,7 +4,7 @@ from mesh.arena import Arena as MeshArena
 import json
 import os
 
-topology = "alice_and_bob.json"
+topology = "cope_setup.json"
 
 cope_arena = CopeArena(f"./topologies/{topology}")
 mesh_arena = MeshArena(f"./topologies/{topology}")
@@ -13,6 +13,7 @@ cope_metrics = cope_arena.simulate(20, 'type1', 'type1', probability_send=1)
 mesh_metrics = mesh_arena.simulate(20, 'type1', 'type1', probability_send=1)
 
 def aggregate_metrics(metrics, is_cope, topology):
+    print(metrics)
     for _, n in metrics.items():
         timesteps = n['timesteps']
         break
@@ -25,7 +26,7 @@ def aggregate_metrics(metrics, is_cope, topology):
     throughputs = [round(sent / timesteps, 3) for sent in messages_sent]
     latencies = [round(n['average_latency'],3) for n in metrics.values() if n['average_latency'] != float('inf')]
 
-    metrics = {
+    agg_metrics = {
         'overall_throughput': throughput,
         'timesteps': timesteps,
         'messages_sent': messages_sent,
@@ -33,10 +34,13 @@ def aggregate_metrics(metrics, is_cope, topology):
         'throughputs': throughputs
     }
 
-    print(metrics)
+    if is_cope:
+        agg_metrics['coding_opps'] = [n['coding_opps_taken'] for n in metrics.values() if n['coding_opps_taken'] != 0]
+
+    print(agg_metrics)
     cope_str = 'cope' if is_cope else 'mesh'
     with open(f'./simulation_results/{topology}/{cope_str}_metrics_{topology}.json', 'w') as f:
-        json.dump(metrics, f)
+        json.dump(agg_metrics, f)
 
 exp_name = topology.split('.')[0]
 if not os.path.exists('./simulation_results/' + exp_name):
