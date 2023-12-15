@@ -82,16 +82,25 @@ Here is a more visual breakdown of the project structure:
 ```
 
 ## Running a simulation
-Example code for running a simulation can be found in [`run_simulate.py`](./run_simulate.py). To run a simulation, you must provide a JSON file detailing the structure of the network, including which different node classes there are (e.g. supernode, hub node, user node), what the transmission ranges of each type of node are, where each node lies, and which classes of node are able to connect to one another. See [`topologies/alice_and_bob.json`](topologies/alice_and_bob.json) for a simpler example of recommended structure, and [`topologies/nycmesh.json`](topologies/nycmesh.json) for a much more complicated example at scale. 
+Example code for running a simulation can be found in [`run_simulate.py`](./run_simulate.py). To run a simulation, you must provide a JSON file detailing the structure of the network, including which different node classes there are (e.g. supernode, hub node, user node), what the transmission ranges of each type of node are, where each node lies, and which classes of node are able to connect to one another. See [`topologies/alice_and_bob.json`](topologies/alice_and_bob.json) for a simpler example of recommended structure, and [`topologies/nycmesh.json`](topologies/nycmesh.json) for a more complicated example at scale. 
 
-
+You can then input your topology file name at the top of `run_simulate` and define a CopeArena and MeshArena to test your network in. To test a network, call `arena.simulate()`, with the number of timesteps to have nodes send messages for, a sending node class, a receiving node class, and optionally a min and max datastream size as well as the probability that a given node will send a message at any timestep. This function will return a dictionary of per-node metrics, which can then be aggregated using the `aggregate_metrics` function and saved to `./simulation_results/{topology_name}`. This function can be modified to look at different metrics given the per-node metrics, for example, fairness. 
 
 ## Modifying simulation architecture
-* test files
+Both the mesh and COPE simulation architecture consist of four primary classes: an `Arena`, a `Node`, a `Link`, and a `Packet`. The `Arena` class maintains overall network state, steps through timesteps and manages node traffic flow, enforces bandwidth allocation, and handles hidden terminal collisions. The `Node` class handles packet queueing and sending, packet coding for the COPE case, and gathering its own metrics. The `Link` class handles transmission between nodes, taking into account probability of a packet drop along a link based on the distances between the two nodes and their respective transmission strengths. Finally, the `Packet` class is used by COPE to add packet headers and reception reports to messages.
 
+Modifications to each system can be studied by modifying behavior in any of the classes above. To run the test cases on the two networks, and ensure that nothing is broken before evaluating a simulation, run 
+```
+pytest *tests.py
+``` 
+in the root directory of the project. You should see all test cases passing. 
 
 ## Future work
-- sanity check simulations
-- use metrics to investigate fairness
-- add in TCP support
-- diff traffic flows, data streams
+While the simulation indicated that based on throughput and latency, MUNCH does not seem very promising for the wireless community network setting, we are excited about the potential of this simulation architecture to be used in further study of network coding. In future, we would like to make the future additions to this project:
+
+* Use metrics to investigate fairness in different network topologies
+    * Look at ratios of throughput and latency amongst different users, compare with distance from a supernode or hub node
+* Investigate more complex traffic flows, making use of the (min data stream, max data stream) parameters that our simulator is capable of handling.
+    * Look further at how many flows get fully completed, and what the time in between receiving packets in the flows is. Is there jitter?
+* Look at energy consumption and storage of each network, adding in a per-node calculation that watches storage space used and energy per computation at that node
+* Further optimize our code for the COPE network coding implementation, as it is currently very slow to run the same number of timesteps in this simulation compared to the normal mesh one
