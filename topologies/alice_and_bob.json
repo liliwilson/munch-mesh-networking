@@ -20,5 +20,5 @@
   },
   "rules": [["type1", "type2"]],
   "responseWaitTime": 1,
-  "packetPoolExpiration": 100
+  "packetPoolExpiration": 10000
 }

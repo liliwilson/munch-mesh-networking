@@ -46,7 +46,7 @@ class Node:
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
         # we are the final destination of a response packet
-        if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()): 
+        if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
             self.received[packet.get_id()] = timestep
             self.received_packets += 1
         # we are generating the packet
@@ -56,7 +56,7 @@ class Node:
         # we are the final destination of request packet
         elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
             self.waiting_for_response[timestep +
-                                      self.response_wait_time] = packet.get_reverse() 
+                                      self.response_wait_time] = packet.get_reverse()
         # we are an intermediate node in a packet's path
         else:
             self.queue.append((packet, timestep))
@@ -94,6 +94,12 @@ class Node:
         self.links[nexthop].transmit(
             packet, self.mac_address, timestep, override)
         return packet
+
+    def packet_in_queue(self) -> bool:
+        """
+        Returns True iff there is a packet in the queue
+        """
+        return len(self.queue) > 0
 
     def is_linked(self, other: str) -> bool:
         """
@@ -156,13 +162,13 @@ class Node:
         """
         Return a dictionary of packets sent by this node and their timesteps
         """
-        return {k: v for k,v in self.sent.items()}
+        return {k: v for k, v in self.sent.items()}
 
     def get_received(self) -> dict[str, str]:
         """
         Return a dictionary of packets received by this node and their timesteps
         """
-        return {k: v for k,v in self.received.items()}
+        return {k: v for k, v in self.received.items()}
 
     def __str__(self) -> str:
         """

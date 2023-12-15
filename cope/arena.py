@@ -18,7 +18,7 @@ class Arena:
         """
         with open(filename, 'r') as f:
             data = json.load(f)
-        
+
         data_rules = data['rules']
         hierarchies = data['hierarchies']
         response_wait_time: int = data['responseWaitTime']
@@ -144,6 +144,17 @@ class Arena:
 
             self.run()
 
+        # while there are still packets in queues
+        while any(node.packet_in_queues() for node in self.node_dict.values()):
+            # if len(self.node_dict['n1'].queues['n2']) < 5:
+            #     print(self.node_dict['n1'].queues)
+            #     print(self.node_dict['n3'].queues)
+            #     print(len(self.node_dict['n2'].queues['n1']))
+            #     input()
+            self.run()
+
+        print(self.timestep)
+
         # get metrics
         per_node_metrics = {}
         for node_mac, node in self.node_dict.items():
@@ -209,6 +220,8 @@ class Arena:
 
         for sender in sending:
             dest = sender.get_next_destination()
+            if dest in ht:
+                print('hidden terminal')
             sender.send_from_queues(
                 self.timestep, bool(dest in ht), override)
 

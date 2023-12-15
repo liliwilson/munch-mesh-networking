@@ -6,6 +6,7 @@ from .link import Link
 from .node import Node
 from .packet import Packet
 
+
 class Arena:
 
     def __init__(self, filename: str) -> None:
@@ -140,6 +141,11 @@ class Arena:
                         self.send_packet(end_user, internet_enabled_node)
 
             self.run()
+
+        while any(node.packet_in_queue() for node in self.node_dict.values()):
+            self.run()
+
+        print(self.timestep)
 
         # get metrics
         per_node_metrics = {}

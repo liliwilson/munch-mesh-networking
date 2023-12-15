@@ -2,6 +2,7 @@ from typing import Any
 import random
 from .packet import COPEPacket, ReceptionReport
 
+
 class Link:
 
     def __init__(self, node1: Any, node2: Any) -> None:
@@ -21,6 +22,7 @@ class Link:
         if override:
             success = True
         if not success:
+            print('link drop')
             return success
         elif source == self.node1.get_mac():
             self.node2.receive_cope_packet(packet, timestep)
