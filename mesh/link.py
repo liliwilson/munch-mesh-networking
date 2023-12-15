@@ -2,7 +2,6 @@ import typing
 import random
 from .packet import Packet
 
-
 class Link:
 
     def __init__(self, node1: typing.Any, node2: typing.Any) -> None:

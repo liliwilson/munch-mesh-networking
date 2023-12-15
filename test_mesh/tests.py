@@ -210,12 +210,12 @@ def test_packet() -> None:
     """
     packet_id = 300
     path = [str(i) for i in range(100)]
-    packet = Packet(256, True, path, packet_id)
+    packet = Packet(True, path, packet_id)
     assert packet.get_path() == path, "packet path is wrong"
     assert packet.get_is_request() == True, "packet should be a request"
     assert packet.get_id() == packet_id, "Packet_id is wrong"
     assert packet.get_reverse() == Packet(
-        256, False, [str(i) for i in range(99, -1, -1)], packet_id
+        False, [str(i) for i in range(99, -1, -1)], packet_id
     )
     return
 

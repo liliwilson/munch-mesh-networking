@@ -6,7 +6,7 @@ from .link import Link
 
 class Node:
 
-    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int, storage_size: float) -> None:
+    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int) -> None:
         """
         Creates a node object
         """
@@ -16,14 +16,14 @@ class Node:
         self.hierarchy_class: str = hierarchy_class
         self.transmit_distance: float = transmit_distance
         self.response_wait_time: int = response_wait_time
-        self.storage_size: float = storage_size
 
         self.links: dict[str, Link] = {}
-
         self.queue: list[tuple[Packet, int]] = []
-        self.sent = {}
-        self.received = {}
         self.waiting_for_response: dict[int, Packet] = {}
+
+        # metrics
+        self.sent: dict[int, int] = {}
+        self.received: dict[int, int] = {}
         self.received_packets = 0
 
     def add_link(self, other: "Node") -> None:
@@ -38,12 +38,6 @@ class Node:
             self.links[other.get_mac()] = link
         return
 
-    def set_path(self, path: list[str]) -> None:
-        """
-        Sets the MAC address path from self to the supernode.
-        """
-        pass
-
     def enqueue_packet(self, packet: Packet, timestep: int) -> None:
         """
         Enqueues the given packet.
@@ -51,16 +45,19 @@ class Node:
         If self is destination of packet, check if self sent packet with this packet id. 
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
+        # we are the final destination of a response packet
         if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()): 
             self.received[packet.get_id()] = timestep
             self.received_packets += 1
-            return
+        # we are generating the packet
         elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
             self.sent[packet.get_id()] = timestep
             self.queue.append((packet, timestep))
+        # we are the final destination of request packet
         elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
             self.waiting_for_response[timestep +
                                       self.response_wait_time] = packet.get_reverse() 
+        # we are an intermediate node in a packet's path
         else:
             self.queue.append((packet, timestep))
         return
@@ -98,16 +95,12 @@ class Node:
             packet, self.mac_address, timestep, override)
         return packet
 
-    # Testing
-
     def is_linked(self, other: str) -> bool:
         """
         Given the MAC address of another node, returns True iff there is a link between self and other.
         """
         return other in self.links
 
-    # TODO will it be an issue that this method is not taking into account another nodes transmission range?
-    # this is to be used for determining if the medium is being used currently
     def in_range(self, x: float, y: float) -> bool:
         """
         Given an (x,y) coordinate, determines if that coordinate is within range of this node.
