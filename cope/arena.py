@@ -70,6 +70,8 @@ class Arena:
 
         self.active_node_list: list[str] = list(self.node_dict.keys())
         self.timestep: int = 0
+        # memoize the list of best paths
+        self.best_paths: dict[tuple[str, str], list[str]] = {}
 
     def can_link(self, node1: str, node2: str) -> bool:
         """
@@ -87,6 +89,11 @@ class Arena:
         Uses Dijkstra's to find ideal route from source to destination node.
         """
         if src_node == dst_node:
+            return
+        if (src_node, dst_node) in self.best_paths:
+            best_path = self.best_paths[(src_node, dst_node)]
+            packet = Packet(is_two_way, best_path)
+            self.node_dict[src_node].enqueue_packet(packet, self.timestep)
             return
 
         probabilities = {node: 0 for node in self.node_dict.keys()}
@@ -119,6 +126,7 @@ class Arena:
             best_path.insert(0, current_node)
             current_node = predecessors[current_node]
 
+        self.best_paths[(src_node, dst_node)] = best_path
         packet = Packet(is_two_way, best_path)
         self.node_dict[src_node].enqueue_packet(packet, self.timestep)
 

@@ -40,6 +40,15 @@ class Node:
             self.neighbor_state[other.get_mac()] = set()
         return
 
+    def initiate_send(self, packet: Packet, timestep: int) -> None:
+        """
+        Initiates the send of packet.
+        """
+        self.sent[packet.get_id()] = timestep
+        self.queues[packet.get_path()[1]].append((packet, timestep))
+        self.packet_pool[(packet.get_id(), True)] = timestep
+        return
+
     def enqueue_packet(self, packet: Packet, timestep: int) -> None:
         """
         Enqueues the given packet.
@@ -132,10 +141,7 @@ class Node:
 
         response_packet = self.waiting_for_response.pop(timestep)
         assert not response_packet.get_is_request()
-        path = response_packet.get_path()
-        self.packet_pool[(response_packet.get_id(),
-                          response_packet.get_is_request())] = timestep
-        self.queues[path[1]].append((response_packet, timestep))
+        self.enqueue_packet(response_packet, timestep)
         return
 
     def get_next_destination(self) -> str:

@@ -4,13 +4,14 @@ from mesh.arena import Arena as MeshArena
 import json
 import os
 
-topology = "cope_setup.json"
+topology = "wheel-top.json"
 
 cope_arena = CopeArena(f"./topologies/{topology}")
 mesh_arena = MeshArena(f"./topologies/{topology}")
 
-cope_metrics = cope_arena.simulate(20, 'type1', 'type1', probability_send=1)
-mesh_metrics = mesh_arena.simulate(20, 'type1', 'type1', probability_send=1)
+cope_metrics = cope_arena.simulate(3, 'type2', 'type2', probability_send=1)
+mesh_metrics = mesh_arena.simulate(3, 'type2', 'type2', probability_send=1)
+
 
 def aggregate_metrics(metrics, is_cope, topology):
     print(metrics)
@@ -21,10 +22,12 @@ def aggregate_metrics(metrics, is_cope, topology):
     throughput = sum(n['successes'] for n in metrics.values()) / timesteps
 
     # this is just successes amongst sending nodes
-    messages_sent = [n['successes'] for n in metrics.values() if n['successes'] != 0]
+    messages_sent = [n['successes']
+                     for n in metrics.values() if n['successes'] != 0]
 
     throughputs = [round(sent / timesteps, 3) for sent in messages_sent]
-    latencies = [round(n['average_latency'],3) for n in metrics.values() if n['average_latency'] != float('inf')]
+    latencies = [round(n['average_latency'], 3)
+                 for n in metrics.values() if n['average_latency'] != float('inf')]
 
     agg_metrics = {
         'overall_throughput': throughput,
@@ -35,12 +38,14 @@ def aggregate_metrics(metrics, is_cope, topology):
     }
 
     if is_cope:
-        agg_metrics['coding_opps'] = [n['coding_opps_taken'] for n in metrics.values() if n['coding_opps_taken'] != 0]
+        agg_metrics['coding_opps'] = [n['coding_opps_taken']
+                                      for n in metrics.values() if n['coding_opps_taken'] != 0]
 
     print(agg_metrics)
     cope_str = 'cope' if is_cope else 'mesh'
     with open(f'./simulation_results/{topology}/{cope_str}_metrics_{topology}.json', 'w') as f:
         json.dump(agg_metrics, f)
+
 
 exp_name = topology.split('.')[0]
 if not os.path.exists('./simulation_results/' + exp_name):
