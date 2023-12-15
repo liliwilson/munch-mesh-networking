@@ -12,7 +12,7 @@ Lili Wilson and Sean Cheng    <br />
 ## Overview
 MUNCH is a practical implementation of network coding inteded for use in wireless mesh community networks. MUNCH aims to leverage network coding to improve throughput for mesh networks, and is based largely off of the [COPE opportunistic network coding](http://nms.csail.mit.edu/~sachin/papers/copesc.pdf) system proposed in 2006. 
 
-In addition to providing an implementation of MUNCH, this repository contains code for simulating wireless mesh netwoks with and without network coding implemented. While we only investigate throughput at latency for our initial project and only look at four main topologies, we believe that this platform has potential to facilitate more extensive research into network coding implementations and potential use under different network circumstances. See future work below for a more detailed breakdown of ideas we have for the simulator. 
+In addition to providing an implementation of MUNCH, this repository contains code for simulating wireless mesh netwoks with and without network coding implemented. While we only investigate throughput at latency for our initial project and only look at four main topologies, we believe that this platform has potential to facilitate more extensive research into network coding implementations and potential use under different network circumstances. See [future work](https://github.com/liliwilson/munch-mesh-networking?tab=readme-ov-file#future-work) below for a more detailed breakdown of ideas we have for the simulator. 
 
 <p align='center'>
 
