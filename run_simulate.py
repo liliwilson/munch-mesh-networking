@@ -4,19 +4,19 @@ from mesh.arena import Arena as MeshArena
 import json
 import os
 
-topology = "cope_setup.json"
+topology = "nycmesh.json"
 
 cope_arena = CopeArena(f"./topologies/{topology}")
 mesh_arena = MeshArena(f"./topologies/{topology}")
 
 cope_metrics = cope_arena.simulate(
-    1000, 'type1', 'type1', probability_send=1)
+    10, 'user', 'supernode', probability_send=1)
 mesh_metrics = mesh_arena.simulate(
-    1000, 'type1', 'type1', probability_send=1)
+    10, 'user', 'supernode', probability_send=1)
 
 
 def aggregate_metrics(metrics, is_cope, topology):
-    # print(metrics)
+    print(metrics)
     for _, n in metrics.items():
         timesteps = n['timesteps']
         break

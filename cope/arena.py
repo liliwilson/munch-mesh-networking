@@ -137,6 +137,8 @@ class Arena:
         To simulate data streams, will queue random number of packets between min_stream_size and max_stream_size, and at any timestep the probability that a sender node will enqueue a new message is equal to probability_send.
         """
         while self.timestep < timesteps:
+            if self.timestep % 1 == 0:
+                print(self.timestep)
             # queue messages
             for end_user in self.hierarchy_dict[end_user_hierarchy_class]:
                 # randomly pick a supernode to send to
@@ -155,6 +157,8 @@ class Arena:
         # while there are still packets in queues
         while any(node.packet_in_queues() for node in self.node_dict.values()):
             self.run()
+            if self.timestep % 1 == 0:
+                print(self.timestep)
 
         print(self.timestep)
 
@@ -224,8 +228,8 @@ class Arena:
 
         for sender in sending:
             dest = sender.get_next_destination()
-            if dest in ht:
-                print('hidden terminal')
+            # if dest in ht:
+            #     print('hidden terminal')
             sender.send_from_queues(
                 self.timestep, bool(dest in ht), override)
 

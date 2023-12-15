@@ -142,8 +142,8 @@ class Node:
                                           self.response_wait_time] = self.waiting_for_cleanup[t]
                 self.waiting_for_cleanup = {}
 
-        # self.packet_pool = {p: t for p, t in self.packet_pool.items(
-        # ) if timestep - t < self.packet_pool_expiration}
+        self.packet_pool = {p: t for p, t in self.packet_pool.items(
+        ) if timestep - t < self.packet_pool_expiration}
         return
 
     def receive_reception_report(self, report: ReceptionReport) -> None:
@@ -164,8 +164,8 @@ class Node:
 
         response_packet = self.waiting_for_response.pop(timestep)
         if response_packet.get_id() in self.resurrected:
-            print(timestep)
-            print(self.resurrected)
+            # print(timestep)
+            # print(self.resurrected)
             raise ValueError
         assert not response_packet.get_is_request()
         self.enqueue_packet(response_packet, timestep)
