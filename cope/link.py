@@ -22,7 +22,7 @@ class Link:
         if override:
             success = True
         if not success:
-            print('link drop')
+            # print('link drop')
             return success
         elif source == self.node1.get_mac():
             self.node2.receive_cope_packet(packet, timestep)

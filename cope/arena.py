@@ -22,7 +22,7 @@ class Arena:
         data_rules = data['rules']
         hierarchies = data['hierarchies']
         response_wait_time: int = data['responseWaitTime']
-        packet_pool_expiration: int = data['packetPoolExpiration'] if 'packetPoolExpiration' in data else 10
+        packet_pool_expiration: int = float('inf')
 
         rules = {h: set() for h in hierarchies}
         for t1, t2 in data_rules:
@@ -93,7 +93,7 @@ class Arena:
         if (src_node, dst_node) in self.best_paths:
             best_path = self.best_paths[(src_node, dst_node)]
             packet = Packet(is_two_way, best_path)
-            self.node_dict[src_node].enqueue_packet(packet, self.timestep)
+            self.node_dict[src_node].initiate_send(packet, self.timestep)
             return
 
         probabilities = {node: 0 for node in self.node_dict.keys()}
@@ -128,7 +128,7 @@ class Arena:
 
         self.best_paths[(src_node, dst_node)] = best_path
         packet = Packet(is_two_way, best_path)
-        self.node_dict[src_node].enqueue_packet(packet, self.timestep)
+        self.node_dict[src_node].initiate_send(packet, self.timestep)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1, probability_send: float = 0.01) -> dict[str, float]:
         """
@@ -199,7 +199,7 @@ class Arena:
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
 
-            if all(len(q) == 0 for _, q in node_obj.get_all_queues().items()):
+            if node_obj.get_next_destination() is None:
                 # checks if all queues are empty
                 node_obj.send_reception_report(self.timestep, override)
                 continue

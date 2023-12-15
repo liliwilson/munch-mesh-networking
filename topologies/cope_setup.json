@@ -1,7 +1,7 @@
 {
   "hierarchies": {
     "type1": {
-      "strength": 1000000,
+      "strength": 10,
       "nodes": [
         {
           "n1": { "x": -2, "y": -1 },

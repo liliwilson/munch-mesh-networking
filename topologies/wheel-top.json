@@ -21,5 +21,6 @@
     }
   },
   "rules": [["type1", "type2"]],
-  "responseWaitTime": 1
+  "responseWaitTime": 1,
+  "packetPoolExpiration": 1000000
 }
