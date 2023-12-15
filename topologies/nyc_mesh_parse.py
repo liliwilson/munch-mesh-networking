@@ -1,10 +1,10 @@
 import json
 import pyproj as proj
 
-with open('./map_data/links.json', 'r') as f:
+with open('./topologies/nycmesh_map_data/links.json', 'r') as f:
     links_data = json.load(f)
 
-with open('./map_data/nodes.json', 'r') as f:
+with open('./topologies/nycmesh_map_data/nodes.json', 'r') as f:
     nodes_data = json.load(f)
 
 node_ids = {node['id']: node for node in nodes_data}
@@ -100,5 +100,5 @@ hierarchies = {
 
 json_temp = {"hierarchies": hierarchies, "rules": rules, "responseWaitTime": 1}
 
-with open('./nycmesh.json', 'w') as f:
-    json.dump(json_temp, f)
+# with open('./nycmesh.json', 'w') as f:
+#     json.dump(json_temp, f)

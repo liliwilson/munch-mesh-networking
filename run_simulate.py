@@ -3,17 +3,10 @@ from mesh.arena import Arena as MeshArena
 
 import json
 import os
+import time
 
-topology = "nycmesh.json"
-
-cope_arena = CopeArena(f"./topologies/{topology}")
-mesh_arena = MeshArena(f"./topologies/{topology}")
-
-cope_metrics = cope_arena.simulate(
-    10, 'user', 'supernode', probability_send=1)
-mesh_metrics = mesh_arena.simulate(
-    10, 'user', 'supernode', probability_send=1)
-
+# define topology here
+topology = "cope_setup.json"
 
 def aggregate_metrics(metrics, is_cope, topology):
     print(metrics)
@@ -27,8 +20,8 @@ def aggregate_metrics(metrics, is_cope, topology):
     messages_sent = [n['successes']
                      for n in metrics.values() if n['successes'] != 0]
 
-    throughputs = [round(sent / timesteps, 3) for sent in messages_sent]
-    latencies = [round(n['average_latency'], 3)
+    throughputs = [round(sent / timesteps, 6) for sent in messages_sent]
+    latencies = [round(n['average_latency'], 6)
                  for n in metrics.values() if n['average_latency'] != float('inf')]
 
     agg_metrics = {
@@ -43,19 +36,30 @@ def aggregate_metrics(metrics, is_cope, topology):
         agg_metrics['coding_opps'] = [n['coding_opps_taken']
                                       for n in metrics.values() if n['coding_opps_taken'] != 0]
 
-    print(agg_metrics)
     cope_str = 'cope' if is_cope else 'mesh'
-    with open(f'./simulation_results/{topology}/{cope_str}_metrics_{topology}.json', 'w') as f:
+    with open(f'./simulation_results_final/{topology}/{cope_str}_metrics_{topology}.json', 'w') as f:
         json.dump(agg_metrics, f)
 
+exp_name = topology.split('.')[0] 
+if not os.path.exists('./simulation_results_final/' + exp_name):
+    os.makedirs('./simulation_results_final/' + exp_name)
 
-exp_name = topology.split('.')[0]
-if not os.path.exists('./simulation_results/' + exp_name):
-    os.makedirs('./simulation_results/' + exp_name)
+# make arenas
+mesh_arena = MeshArena(f"./topologies/{topology}")
+cope_arena = CopeArena(f"./topologies/{topology}")
 
-print("COPEEEE")
-aggregate_metrics(cope_metrics, True, exp_name)
+# define number of timesteps, sending nodes, receiving nodes, and optionally datastream size parameters and node sending probabilities here
+mesh_metrics = mesh_arena.simulate(
+    100, 'type1', 'type1', probability_send=.5)
+t = time.time()
 
-
-print("\n\nMESHHHH")
 aggregate_metrics(mesh_metrics, False, exp_name)
+print('mesh time', time.time() - t)
+
+t = time.time()
+cope_metrics = cope_arena.simulate(
+    100, 'type1', 'type1', probability_send=.5)
+
+aggregate_metrics(cope_metrics, True, exp_name)
+print('cope time', time.time() - t)
+
