@@ -208,7 +208,7 @@ class Node:
         """
         Returns True iff there are packets in any of the nodes' queues
         """
-        return any(q for _, q in self.queues.items())
+        return self.get_next_destination() is not None
 
     def is_linked(self, other: str) -> bool:
         """
