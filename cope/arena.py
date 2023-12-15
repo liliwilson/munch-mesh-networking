@@ -174,7 +174,8 @@ class Arena:
                 'throughput': packet_successes / timesteps,
                 'drops': packet_drops,
                 'average_latency': sum(latencies)/len(latencies) if len(latencies) > 0 else float('inf'),
-                'coding_opps_taken': coding_opps
+                'coding_opps_taken': coding_opps,
+                'timesteps': self.timestep
             }
 
         return per_node_metrics
