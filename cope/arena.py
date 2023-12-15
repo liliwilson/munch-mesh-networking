@@ -1,4 +1,3 @@
-import typing
 import json
 import heapq
 import random
@@ -19,9 +18,9 @@ class Arena:
         """
         with open(filename, 'r') as f:
             data = json.load(f)
-            data_rules = data['rules']
-            hierarchies = data['hierarchies']
-
+        
+        data_rules = data['rules']
+        hierarchies = data['hierarchies']
         response_wait_time: int = data['responseWaitTime']
         packet_pool_expiration: int = data['packet_pool_expiration'] if 'packet_pool_expiration' in data else 10
 
@@ -38,10 +37,9 @@ class Arena:
 
         for hierarchy in hierarchies:
             transmit_distance = hierarchies[hierarchy]['strength']
-
             list_of_macs = []
-
             all_nodes = hierarchies[hierarchy]['nodes'][0]
+
             for mac_addr, node_obj in all_nodes.items():
                 x = node_obj['x']
                 y = node_obj['y']
@@ -72,7 +70,6 @@ class Arena:
 
         self.active_node_list: list[str] = list(self.node_dict.keys())
         self.timestep: int = 0
-        self.packets_queued: int = 0
 
     def can_link(self, node1: str, node2: str) -> bool:
         """
@@ -86,6 +83,8 @@ class Arena:
     def send_packet(self, src_node: str, dst_node: str, is_two_way: bool = True) -> None:
         """
         Initiates a packet send from a source node, to a given a destination node.
+
+        Uses Dijkstra's to find ideal route from source to destination node.
         """
         if src_node == dst_node:
             return
@@ -144,6 +143,7 @@ class Arena:
                         self.send_packet(end_user, internet_enabled_node)
 
             self.run()
+
         # get metrics
         per_node_metrics = {}
         for node_mac, node in self.node_dict.items():
@@ -183,9 +183,6 @@ class Arena:
 
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
-            # node_queue = node_obj.get_queue_state()
-            # if not node_queue:  # TODO: NEED TO CHANGE WRT cope nodes
-            #     continue
 
             if all(len(q) == 0 for _, q in node_obj.get_all_queues().items()):
                 # checks if all queues are empty
@@ -201,7 +198,7 @@ class Arena:
                     break
             else:
                 sending.append(node_obj)
-                nexthop = node_obj.get_next_destination()  # TODO: MIGHT NEED TO CHANGE
+                nexthop = node_obj.get_next_destination()
                 if nexthop in nexthops:
                     ht.add(nexthop)
                 else:
