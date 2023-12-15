@@ -60,13 +60,10 @@ def test_wheel_top() -> None:
 
     arena.run()
 
-    # TODO: what happens to the true receiver
     print(node_mapping['n3'].get_packet_pool())
     for n in ['n3', 'n4', 'n5']:
         assert len(node_mapping[n].get_packet_pool(
         )) == 1, 'all nodes should have received a packet'
-
-    # arena.run()  # TODO: change this to have the parameters required
 
     return
 
