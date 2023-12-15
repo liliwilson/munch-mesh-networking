@@ -120,8 +120,7 @@ class Arena:
             best_path.insert(0, current_node)
             current_node = predecessors[current_node]
 
-        # TODO do we want to set storage size as a constant, or input to arena?
-        packet = Packet(0, is_two_way, best_path)
+        packet = Packet(is_two_way, best_path)
         self.node_dict[src_node].enqueue_packet(packet, self.timestep)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1, probability_send: float = 0.01) -> dict[str, float]:

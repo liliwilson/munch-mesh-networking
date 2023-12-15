@@ -2,7 +2,6 @@ from typing import Any
 import random
 from .packet import COPEPacket, ReceptionReport
 
-
 class Link:
 
     def __init__(self, node1: Any, node2: Any) -> None:

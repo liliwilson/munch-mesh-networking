@@ -1,7 +1,5 @@
-import typing
 from .packet import Packet, COPEPacket, ReceptionReport
 from .link import Link
-
 
 class Node:
 
@@ -16,16 +14,15 @@ class Node:
         self.response_wait_time: int = response_wait_time
 
         self.links: dict[str, Link] = {}
-
         self.queues: dict[str, list[tuple[Packet, int]]] = {}
-        self.sent: dict[int, int] = {}
         self.waiting_for_response: dict[int, Packet] = {}
-        self.received = {}
-        self.received_packets = 0
         self.packet_pool: dict[tuple[str, bool], int] = {}
         self.neighbor_state: dict[str, set[tuple[int, bool]]] = {}
         self.packet_pool_expiration: int = packet_pool_expiration
 
+        self.sent: dict[int, int] = {}
+        self.received: dict[int, int] = {}
+        self.received_packets: int = 0
         self.coded_packets_history: list[tuple[list[int], int]] = []
 
     def add_link(self, other: "Node") -> None:
@@ -42,12 +39,6 @@ class Node:
             self.neighbor_state[other.get_mac()] = set()
         return
 
-    def set_path(self, path: list[str]) -> None:
-        """
-        Sets the MAC address path from self to the supernode.
-        """
-        pass
-
     def enqueue_packet(self, packet: Packet, timestep: int) -> None:
         """
         Enqueues the given packet.
@@ -55,26 +46,26 @@ class Node:
         If self is destination of packet, check if self sent packet with this packet id. 
             If yes, we are done. If no, enqueue a response packet and send back to original src.
         """
+        # we are the final destination of a response
         if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
-            # final reciever
             self.received[packet.get_id()] = timestep
             self.received_packets += 1
             return
-        # initiating a send
+        # we are initiating a send
         elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
             self.packet_pool[(
                 packet.get_id(), packet.get_is_request())] = timestep
             self.sent[packet.get_id()] = timestep
             self.queues[packet.get_path()[1]].append((packet, timestep))
+        # we are the final destination of a request
         elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
-            # need to create a response
             self.waiting_for_response[timestep +
                                       self.response_wait_time] = packet.get_reverse()
+        # we are engaging in promiscuous listening
         elif self.get_mac() not in packet.get_path():
-            # we are sus
             pass
+        # we are a node on the path
         else:
-            # on the path
             path = packet.get_path()
             nexthop = path[path.index(self.mac_address) + 1]
             self.queues[nexthop].append((packet, timestep))
@@ -104,12 +95,11 @@ class Node:
         self.packet_pool[(new_packet.get_id(),
                           new_packet.get_is_request())] = timestep
         self.enqueue_packet(new_packet, timestep)
-
         return
 
     def cleanup(self, timestep: int) -> None:
         """
-        Cleans up hidden terminal collisions for sus nodes
+        Cleans up hidden terminal collisions for nodes in promiscuous mode
         """
         if list(self.packet_pool.values()).count(timestep) > 1:
             self.packet_pool = {p: t for p, t in self.packet_pool.items()
@@ -166,10 +156,9 @@ class Node:
         if hidden_terminal:
             return
         for neighbor, q in self.queues.items():  # adds all packets to the copepacket
-            if q:
-                if all((p.get_id(), p.get_is_request()) in self.neighbor_state[neighbor] for p in packets):
-                    packets.append(q.pop(0)[0])
-                    nexthops.append(neighbor)
+            if q and all((p.get_id(), p.get_is_request()) in self.neighbor_state[neighbor] for p in packets):
+                packets.append(q.pop(0)[0])
+                nexthops.append(neighbor)
 
         for neighbor in nexthops:  # this ensures fairness, so we are not just encoding the same people
             self.neighbor_state[neighbor] = self.neighbor_state.pop(neighbor)
@@ -203,8 +192,6 @@ class Node:
         """
         return other in self.links
 
-    # TODO will it be an issue that this method is not taking into account another nodes transmission range?
-    # this is to be used for determining if the medium is being used currently
     def in_range(self, x: float, y: float) -> bool:
         """
         Given an (x,y) coordinate, determines if that coordinate is within range of this node.
@@ -297,5 +284,4 @@ class Node:
         """
         Returns Node representation 
         """
-
         return f"Node(mac_addr=\"{self.mac_address}\", x={self.x}, y={self.y}, transmit_distance={self.transmit_distance}, hierarchy_class=\"{self.hierarchy_class}\")"
