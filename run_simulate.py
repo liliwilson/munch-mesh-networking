@@ -4,7 +4,7 @@ from mesh.arena import Arena as MeshArena
 import json
 import os
 
-topology = "nycmesh.json"
+topology = "alice_and_bob.json"
 
 cope_arena = CopeArena(f"./topologies/{topology}")
 mesh_arena = MeshArena(f"./topologies/{topology}")
