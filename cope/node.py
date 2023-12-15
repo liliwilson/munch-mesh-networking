@@ -51,11 +51,8 @@ class Node:
         if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
             self.received[packet.get_id()] = timestep
             self.received_packets += 1
-            return
         # we are initiating a send
         elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
-            self.packet_pool[(
-                packet.get_id(), packet.get_is_request())] = timestep
             self.sent[packet.get_id()] = timestep
             self.queues[packet.get_path()[1]].append((packet, timestep))
         # we are the final destination of a request
@@ -84,10 +81,16 @@ class Node:
         packets = cope_packet.get_packets()
         new_packet = None
         for packet in packets:
-            if (packet.get_id(), packet.get_is_request()) not in self.packet_pool and new_packet is None:
+            if (packet.get_id(), packet.get_is_request()) in self.packet_pool:
+                continue
+            elif packet.get_id() in self.sent and packet.get_is_request():
+                self.packet_pool[(packet.get_id(), True)
+                                 ] = self.sent[packet.get_id()]
+                continue
+
+            if new_packet is None:
                 new_packet = packet
-            # Too many unknown packets
-            elif (packet.get_id(), packet.get_is_request()) not in self.packet_pool and new_packet is not None:
+            else:
                 return
 
         # we have already seen all packets encoded here
@@ -128,6 +131,7 @@ class Node:
             return
 
         response_packet = self.waiting_for_response.pop(timestep)
+        assert not response_packet.get_is_request()
         path = response_packet.get_path()
         self.packet_pool[(response_packet.get_id(),
                           response_packet.get_is_request())] = timestep
@@ -155,15 +159,24 @@ class Node:
 
         Dequeues the next packet(s), creates a COPEPacket object, and sends the packet to its next hops. 
         """
-        nexthops = [self.get_next_destination()]
-        packets = [self.queues[nexthops[0]].pop(0)[0]]
+        single = self.get_next_destination()
+        nexthops = [single]
+        packets = [self.queues[single].pop(0)[0]]
         if hidden_terminal:
             return
         for neighbor, q in self.queues.items():  # adds all packets to the copepacket
-            if neighbor not in nexthops:
-                if q and all((p.get_id(), p.get_is_request()) in self.neighbor_state[neighbor] for p in packets):
-                    packets.append(q.pop(0)[0])
-                    nexthops.append(neighbor)
+            if neighbor != nexthops[0]:
+                if not (q and all((p.get_id(), p.get_is_request()) in self.neighbor_state[neighbor] for p in packets)):
+                    # checks to see that all previous packets are in neighbor's packet pool
+                    continue
+
+                p = q[0][0]
+                if not all((p.get_id(), p.get_is_request()) in self.neighbor_state[node] for node in nexthops):
+                    # checks to see if the node single knows p
+                    continue
+
+                packets.append(q.pop(0)[0])
+                nexthops.append(neighbor)
 
         for neighbor in nexthops:  # this ensures fairness, so we are not just encoding the same people
             self.neighbor_state[neighbor] = self.neighbor_state.pop(neighbor)

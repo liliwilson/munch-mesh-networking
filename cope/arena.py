@@ -146,11 +146,6 @@ class Arena:
 
         # while there are still packets in queues
         while any(node.packet_in_queues() for node in self.node_dict.values()):
-            # if len(self.node_dict['n1'].queues['n2']) < 5:
-            #     print(self.node_dict['n1'].queues)
-            #     print(self.node_dict['n3'].queues)
-            #     print(len(self.node_dict['n2'].queues['n1']))
-            #     input()
             self.run()
 
         print(self.timestep)
