@@ -26,8 +26,6 @@ In addition to providing an implementation of MUNCH, this repository contains co
 ## Project structure
 The [`cope`](./cope) and [`mesh`](./mesh) directories contain the simulation structure for MUNCH and normal wireless mesh networks respectively. A simulation is managed by an instance of the Arena class, which handles initializing a topology from a JSON file, managing network traffic flows, stepping through timesteps in a simulation, and gathering metrics. The high level arena workflow for each network type can be found in `{network}/docs/{network}_arena_workflow.md`. 
 
-To explore the full documentation for each network type, you can find the mesh network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/mesh) and COPE network coding network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/cope).
-
 The [`test_cope`](./test_cope) and [`test_mesh`](./test_mesh) directories contain test cases and test topology that were used to verify that the simulators were working as expected. You can find all of the test cases within `tests.py` and the test arenas in the `test_arenas` subdirectory of each testing folder.
 
 The code for running a simulation and aggregating metrics lies in [`run_simulate.py`](./run_simulate.py). We explain below how to set up a simulation. 
@@ -93,6 +91,9 @@ Here is a more visual breakdown of the project structure:
     │   └── nodes.json
     └── wheel-top.json
 ```
+
+## Documentation
+To explore the full documentation for each network type, you can find the mesh network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/mesh) and COPE network coding network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/cope).
 
 ## Running a simulation
 Example code for running a simulation can be found in [`run_simulate.py`](./run_simulate.py). To run a simulation, you must provide a JSON file detailing the structure of the network, including which different node classes there are (e.g. supernode, hub node, user node), what the transmission ranges of each type of node are, where each node lies, and which classes of node are able to connect to one another. See [`topologies/alice_and_bob.json`](topologies/alice_and_bob.json) for a simpler example of recommended structure, and [`topologies/nycmesh.json`](topologies/nycmesh.json) for a more complicated example at scale. 
