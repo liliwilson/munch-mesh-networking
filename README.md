@@ -7,7 +7,21 @@ Lili Wilson and Sean Cheng    <br />
     6.185, Fall 2023
     <br />
   </p>
+
+  
+[Overview](https://github.com/liliwilson/munch-mesh-networking?tab=readme-ov-file#overview)
+•
+[Project Structure](https://github.com/liliwilson/munch-mesh-networking?tab=readme-ov-file#project-structure) 
+•
+[Docs](https://github.com/liliwilson/munch-mesh-networking?tab=readme-ov-file#documentation) 
+•
+[How to Use](https://github.com/liliwilson/munch-mesh-networking?tab=readme-ov-file#running-a-simulation) 
+•
+[Future Work](https://github.com/liliwilson/munch-mesh-networking?tab=readme-ov-file#future-work)
+
 </div>
+
+
 
 ## Overview
 MUNCH is a practical implementation of network coding inteded for use in wireless mesh community networks. MUNCH aims to leverage network coding to improve throughput for mesh networks, and is based largely off of the [COPE opportunistic network coding](http://nms.csail.mit.edu/~sachin/papers/copesc.pdf) system proposed in 2006. 
