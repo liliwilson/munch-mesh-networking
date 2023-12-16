@@ -1,5 +1,4 @@
 venv/
 __pycache__/
-html/
 .DS_Store
-simulation_results/
+simulation_results*/

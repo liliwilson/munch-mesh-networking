@@ -29,53 +29,187 @@
 <pre><code class="python">import typing
 
 from .packet import Packet
+from .link import Link
 
 
 class Node:
 
-    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_power: float, storage_size: float) -&gt; None:
+    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int) -&gt; None:
         &#34;&#34;&#34;
         Creates a node object
         &#34;&#34;&#34;
-        pass
+        self.mac_address: str = mac_address
+        self.x: float = x
+        self.y: float = y
+        self.hierarchy_class: str = hierarchy_class
+        self.transmit_distance: float = transmit_distance
+        self.response_wait_time: int = response_wait_time
+
+        self.links: dict[str, Link] = {}
+        self.queue: list[tuple[Packet, int]] = []
+        self.waiting_for_response: dict[int, Packet] = {}
+
+        # metrics
+        self.sent: dict[int, int] = {}
+        self.received: dict[int, int] = {}
+        self.received_packets = 0
 
     def add_link(self, other: &#34;Node&#34;) -&gt; None:
         &#34;&#34;&#34;
         Adds a link from self to other.
         &#34;&#34;&#34;
-        pass
+        distance = min(self.transmit_distance, other.get_transmit_distance())
+        other_x, other_y = other.get_position()
+        actual = ((self.x - other_x) ** 2 + (self.y - other_y) ** 2) ** 0.5
+        if actual &lt;= distance:
+            link = Link(self, other)
+            self.links[other.get_mac()] = link
+        return
 
-    def set_path(self, path: typing.List[str]) -&gt; None:
+    def enqueue_packet(self, packet: Packet, timestep: int) -&gt; None:
         &#34;&#34;&#34;
-        Sets the MAC address path from self to the supernode.
-        &#34;&#34;&#34;
-        pass
+        Enqueues the given packet.
 
-    def generate_packet(self, dst: str) -&gt; None:
+        If self is destination of packet, check if self sent packet with this packet id. 
+            If yes, we are done. If no, enqueue a response packet and send back to original src.
         &#34;&#34;&#34;
-        Creates a generated packet with final destination dst and enqueues it.
-        &#34;&#34;&#34;
-        pass
+        # we are the final destination of a response packet
+        if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
+            self.received[packet.get_id()] = timestep
+            self.received_packets += 1
+        # we are generating the packet
+        elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
+            self.sent[packet.get_id()] = timestep
+            self.queue.append((packet, timestep))
+        # we are the final destination of request packet
+        elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
+            self.waiting_for_response[timestep +
+                                      self.response_wait_time] = packet.get_reverse()
+        # we are an intermediate node in a packet&#39;s path
+        else:
+            self.queue.append((packet, timestep))
+        return
 
-    def get_next_destination(self) -&gt; str:
+    def learn_timestep(self, timestep: int) -&gt; None:
+        &#34;&#34;&#34;
+        Tells this node the timestep that the arena is currently on. Updates the queue if it should
+        &#34;&#34;&#34;
+        if timestep not in self.waiting_for_response:
+            return
+
+        response_packet = self.waiting_for_response.pop(timestep)
+        self.queue.append((response_packet, timestep))
+        return
+
+    def get_next_destination(self) -&gt; str or None:
         &#34;&#34;&#34;
         Returns the MAC address of the nexthop of the packet at the front of the queue.
         &#34;&#34;&#34;
-        pass
+        next_packet = self.queue[0][0]
+        packet_path = next_packet.get_path()
+        return packet_path[packet_path.index(self.mac_address) + 1]
 
-    def send_from_queue(self, timestep: int) -&gt; None: 
+    def send_from_queue(self, timestep: int, hidden_terminal: bool, override: bool) -&gt; Packet:
         &#34;&#34;&#34;
         Dequeues the next packet and sends the packet to its next hop. 
-        &#34;&#34;&#34;
-        pass
 
-    def receive_packet(self, packet: Packet, timestep: int) -&gt; None:
+        If override, packet will always complete except if it&#39;s a hidden terminal
         &#34;&#34;&#34;
-        Receives a packet and adds the packet to own queue.
+        nexthop = self.get_next_destination()
+        packet = self.queue.pop(0)[0]
+        if hidden_terminal:
+            return packet
+        self.links[nexthop].transmit(
+            packet, self.mac_address, timestep, override)
+        return packet
 
-        If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
+    def packet_in_queue(self) -&gt; bool:
         &#34;&#34;&#34;
-        pass</code></pre>
+        Returns True iff there is a packet in the queue
+        &#34;&#34;&#34;
+        return len(self.queue) &gt; 0
+
+    def is_linked(self, other: str) -&gt; bool:
+        &#34;&#34;&#34;
+        Given the MAC address of another node, returns True iff there is a link between self and other.
+        &#34;&#34;&#34;
+        return other in self.links
+
+    def in_range(self, x: float, y: float) -&gt; bool:
+        &#34;&#34;&#34;
+        Given an (x,y) coordinate, determines if that coordinate is within range of this node.
+        &#34;&#34;&#34;
+        return ((x - self.x) ** 2 + (y - self.y) ** 2) ** 0.5 &lt;= self.transmit_distance
+
+    def get_queue_state(self) -&gt; list[Packet]:
+        &#34;&#34;&#34;
+        Returns an ordered list of packets, representing self&#39;s current queue.
+        &#34;&#34;&#34;
+        return [p[0] for p in self.queue]
+
+    def get_packets_received(self) -&gt; int:
+        &#34;&#34;&#34;
+        Returns the number of packets that this node has received
+        &#34;&#34;&#34;
+        return self.received_packets
+
+    def get_position(self) -&gt; tuple[float, float]:
+        &#34;&#34;&#34;
+        Returns the position of the node in (x, y) format
+        &#34;&#34;&#34;
+        return (self.x, self.y)
+
+    def get_mac(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns the mac address of this node
+        &#34;&#34;&#34;
+        return self.mac_address
+
+    def get_transmit_distance(self) -&gt; float:
+        &#34;&#34;&#34;
+        Returns the transmit distance of this node
+        &#34;&#34;&#34;
+        return self.transmit_distance
+
+    def get_neighbors(self) -&gt; list[&#39;Node&#39;]:
+        &#34;&#34;&#34;
+        Return a list of nodes we are connected to.
+        &#34;&#34;&#34;
+        return list(self.links.keys())
+
+    def get_probability(self, neighbor: str) -&gt; float:
+        &#34;&#34;&#34;
+        Return the probability that a transmission to a neighbor will succeed.
+        &#34;&#34;&#34;
+        if not neighbor in self.links:
+            return 0
+
+        return self.links[neighbor].get_probability()
+
+    def get_sent(self) -&gt; dict[str, str]:
+        &#34;&#34;&#34;
+        Return a dictionary of packets sent by this node and their timesteps
+        &#34;&#34;&#34;
+        return {k: v for k, v in self.sent.items()}
+
+    def get_received(self) -&gt; dict[str, str]:
+        &#34;&#34;&#34;
+        Return a dictionary of packets received by this node and their timesteps
+        &#34;&#34;&#34;
+        return {k: v for k, v in self.received.items()}
+
+    def __str__(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns a human-readable version of the string.
+        &#34;&#34;&#34;
+        return f&#34;Node with MAC {self.mac_address}, at position ({self.x}, {self.y}) of class {self.hierarchy_class}&#34;
+
+    def __repr__(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns Node representation 
+        &#34;&#34;&#34;
+
+        return f&#34;Node(mac_addr=\&#34;{self.mac_address}\&#34;, x={self.x}, y={self.y}, transmit_distance={self.transmit_distance}, hierarchy_class=\&#34;{self.hierarchy_class}\&#34;)&#34;</code></pre>
 </details>
 </section>
 <section>
@@ -89,7 +223,7 @@ class Node:
 <dl>
 <dt id="mesh.node.Node"><code class="flex name class">
 <span>class <span class="ident">Node</span></span>
-<span>(</span><span>mac_address: str, x: float, y: float, hierarchy_class: str, transmit_power: float, storage_size: float)</span>
+<span>(</span><span>mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Creates a node object</p></div>
@@ -99,49 +233,182 @@ class Node:
 </summary>
 <pre><code class="python">class Node:
 
-    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_power: float, storage_size: float) -&gt; None:
+    def __init__(self, mac_address: str, x: float, y: float, hierarchy_class: str, transmit_distance: float, response_wait_time: int) -&gt; None:
         &#34;&#34;&#34;
         Creates a node object
         &#34;&#34;&#34;
-        pass
+        self.mac_address: str = mac_address
+        self.x: float = x
+        self.y: float = y
+        self.hierarchy_class: str = hierarchy_class
+        self.transmit_distance: float = transmit_distance
+        self.response_wait_time: int = response_wait_time
+
+        self.links: dict[str, Link] = {}
+        self.queue: list[tuple[Packet, int]] = []
+        self.waiting_for_response: dict[int, Packet] = {}
+
+        # metrics
+        self.sent: dict[int, int] = {}
+        self.received: dict[int, int] = {}
+        self.received_packets = 0
 
     def add_link(self, other: &#34;Node&#34;) -&gt; None:
         &#34;&#34;&#34;
         Adds a link from self to other.
         &#34;&#34;&#34;
-        pass
+        distance = min(self.transmit_distance, other.get_transmit_distance())
+        other_x, other_y = other.get_position()
+        actual = ((self.x - other_x) ** 2 + (self.y - other_y) ** 2) ** 0.5
+        if actual &lt;= distance:
+            link = Link(self, other)
+            self.links[other.get_mac()] = link
+        return
 
-    def set_path(self, path: typing.List[str]) -&gt; None:
+    def enqueue_packet(self, packet: Packet, timestep: int) -&gt; None:
         &#34;&#34;&#34;
-        Sets the MAC address path from self to the supernode.
-        &#34;&#34;&#34;
-        pass
+        Enqueues the given packet.
 
-    def generate_packet(self, dst: str) -&gt; None:
+        If self is destination of packet, check if self sent packet with this packet id. 
+            If yes, we are done. If no, enqueue a response packet and send back to original src.
         &#34;&#34;&#34;
-        Creates a generated packet with final destination dst and enqueues it.
-        &#34;&#34;&#34;
-        pass
+        # we are the final destination of a response packet
+        if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
+            self.received[packet.get_id()] = timestep
+            self.received_packets += 1
+        # we are generating the packet
+        elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
+            self.sent[packet.get_id()] = timestep
+            self.queue.append((packet, timestep))
+        # we are the final destination of request packet
+        elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
+            self.waiting_for_response[timestep +
+                                      self.response_wait_time] = packet.get_reverse()
+        # we are an intermediate node in a packet&#39;s path
+        else:
+            self.queue.append((packet, timestep))
+        return
 
-    def get_next_destination(self) -&gt; str:
+    def learn_timestep(self, timestep: int) -&gt; None:
+        &#34;&#34;&#34;
+        Tells this node the timestep that the arena is currently on. Updates the queue if it should
+        &#34;&#34;&#34;
+        if timestep not in self.waiting_for_response:
+            return
+
+        response_packet = self.waiting_for_response.pop(timestep)
+        self.queue.append((response_packet, timestep))
+        return
+
+    def get_next_destination(self) -&gt; str or None:
         &#34;&#34;&#34;
         Returns the MAC address of the nexthop of the packet at the front of the queue.
         &#34;&#34;&#34;
-        pass
+        next_packet = self.queue[0][0]
+        packet_path = next_packet.get_path()
+        return packet_path[packet_path.index(self.mac_address) + 1]
 
-    def send_from_queue(self, timestep: int) -&gt; None: 
+    def send_from_queue(self, timestep: int, hidden_terminal: bool, override: bool) -&gt; Packet:
         &#34;&#34;&#34;
         Dequeues the next packet and sends the packet to its next hop. 
-        &#34;&#34;&#34;
-        pass
 
-    def receive_packet(self, packet: Packet, timestep: int) -&gt; None:
+        If override, packet will always complete except if it&#39;s a hidden terminal
         &#34;&#34;&#34;
-        Receives a packet and adds the packet to own queue.
+        nexthop = self.get_next_destination()
+        packet = self.queue.pop(0)[0]
+        if hidden_terminal:
+            return packet
+        self.links[nexthop].transmit(
+            packet, self.mac_address, timestep, override)
+        return packet
 
-        If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
+    def packet_in_queue(self) -&gt; bool:
         &#34;&#34;&#34;
-        pass</code></pre>
+        Returns True iff there is a packet in the queue
+        &#34;&#34;&#34;
+        return len(self.queue) &gt; 0
+
+    def is_linked(self, other: str) -&gt; bool:
+        &#34;&#34;&#34;
+        Given the MAC address of another node, returns True iff there is a link between self and other.
+        &#34;&#34;&#34;
+        return other in self.links
+
+    def in_range(self, x: float, y: float) -&gt; bool:
+        &#34;&#34;&#34;
+        Given an (x,y) coordinate, determines if that coordinate is within range of this node.
+        &#34;&#34;&#34;
+        return ((x - self.x) ** 2 + (y - self.y) ** 2) ** 0.5 &lt;= self.transmit_distance
+
+    def get_queue_state(self) -&gt; list[Packet]:
+        &#34;&#34;&#34;
+        Returns an ordered list of packets, representing self&#39;s current queue.
+        &#34;&#34;&#34;
+        return [p[0] for p in self.queue]
+
+    def get_packets_received(self) -&gt; int:
+        &#34;&#34;&#34;
+        Returns the number of packets that this node has received
+        &#34;&#34;&#34;
+        return self.received_packets
+
+    def get_position(self) -&gt; tuple[float, float]:
+        &#34;&#34;&#34;
+        Returns the position of the node in (x, y) format
+        &#34;&#34;&#34;
+        return (self.x, self.y)
+
+    def get_mac(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns the mac address of this node
+        &#34;&#34;&#34;
+        return self.mac_address
+
+    def get_transmit_distance(self) -&gt; float:
+        &#34;&#34;&#34;
+        Returns the transmit distance of this node
+        &#34;&#34;&#34;
+        return self.transmit_distance
+
+    def get_neighbors(self) -&gt; list[&#39;Node&#39;]:
+        &#34;&#34;&#34;
+        Return a list of nodes we are connected to.
+        &#34;&#34;&#34;
+        return list(self.links.keys())
+
+    def get_probability(self, neighbor: str) -&gt; float:
+        &#34;&#34;&#34;
+        Return the probability that a transmission to a neighbor will succeed.
+        &#34;&#34;&#34;
+        if not neighbor in self.links:
+            return 0
+
+        return self.links[neighbor].get_probability()
+
+    def get_sent(self) -&gt; dict[str, str]:
+        &#34;&#34;&#34;
+        Return a dictionary of packets sent by this node and their timesteps
+        &#34;&#34;&#34;
+        return {k: v for k, v in self.sent.items()}
+
+    def get_received(self) -&gt; dict[str, str]:
+        &#34;&#34;&#34;
+        Return a dictionary of packets received by this node and their timesteps
+        &#34;&#34;&#34;
+        return {k: v for k, v in self.received.items()}
+
+    def __str__(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns a human-readable version of the string.
+        &#34;&#34;&#34;
+        return f&#34;Node with MAC {self.mac_address}, at position ({self.x}, {self.y}) of class {self.hierarchy_class}&#34;
+
+    def __repr__(self) -&gt; str:
+        &#34;&#34;&#34;
+        Returns Node representation 
+        &#34;&#34;&#34;
+
+        return f&#34;Node(mac_addr=\&#34;{self.mac_address}\&#34;, x={self.x}, y={self.y}, transmit_distance={self.transmit_distance}, hierarchy_class=\&#34;{self.hierarchy_class}\&#34;)&#34;</code></pre>
 </details>
 <h3>Methods</h3>
 <dl>
@@ -158,23 +425,81 @@ class Node:
     &#34;&#34;&#34;
     Adds a link from self to other.
     &#34;&#34;&#34;
-    pass</code></pre>
+    distance = min(self.transmit_distance, other.get_transmit_distance())
+    other_x, other_y = other.get_position()
+    actual = ((self.x - other_x) ** 2 + (self.y - other_y) ** 2) ** 0.5
+    if actual &lt;= distance:
+        link = Link(self, other)
+        self.links[other.get_mac()] = link
+    return</code></pre>
 </details>
 </dd>
-<dt id="mesh.node.Node.generate_packet"><code class="name flex">
-<span>def <span class="ident">generate_packet</span></span>(<span>self, dst: str) ‑> None</span>
+<dt id="mesh.node.Node.enqueue_packet"><code class="name flex">
+<span>def <span class="ident">enqueue_packet</span></span>(<span>self, packet: <a title="mesh.packet.Packet" href="packet.html#mesh.packet.Packet">Packet</a>, timestep: int) ‑> None</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Creates a generated packet with final destination dst and enqueues it.</p></div>
+<div class="desc"><p>Enqueues the given packet.</p>
+<p>If self is destination of packet, check if self sent packet with this packet id.
+If yes, we are done. If no, enqueue a response packet and send back to original src.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def generate_packet(self, dst: str) -&gt; None:
+<pre><code class="python">def enqueue_packet(self, packet: Packet, timestep: int) -&gt; None:
     &#34;&#34;&#34;
-    Creates a generated packet with final destination dst and enqueues it.
+    Enqueues the given packet.
+
+    If self is destination of packet, check if self sent packet with this packet id. 
+        If yes, we are done. If no, enqueue a response packet and send back to original src.
     &#34;&#34;&#34;
-    pass</code></pre>
+    # we are the final destination of a response packet
+    if packet.get_id() in self.sent or (not packet.get_is_request() and packet.get_path()[-1] == self.get_mac()):
+        self.received[packet.get_id()] = timestep
+        self.received_packets += 1
+    # we are generating the packet
+    elif packet.get_is_request() and packet.get_path()[0] == self.get_mac():
+        self.sent[packet.get_id()] = timestep
+        self.queue.append((packet, timestep))
+    # we are the final destination of request packet
+    elif packet.get_is_request() and packet.get_path()[-1] == self.get_mac():
+        self.waiting_for_response[timestep +
+                                  self.response_wait_time] = packet.get_reverse()
+    # we are an intermediate node in a packet&#39;s path
+    else:
+        self.queue.append((packet, timestep))
+    return</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_mac"><code class="name flex">
+<span>def <span class="ident">get_mac</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the mac address of this node</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_mac(self) -&gt; str:
+    &#34;&#34;&#34;
+    Returns the mac address of this node
+    &#34;&#34;&#34;
+    return self.mac_address</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_neighbors"><code class="name flex">
+<span>def <span class="ident">get_neighbors</span></span>(<span>self) ‑> list[<a title="mesh.node.Node" href="#mesh.node.Node">Node</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a list of nodes we are connected to.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_neighbors(self) -&gt; list[&#39;Node&#39;]:
+    &#34;&#34;&#34;
+    Return a list of nodes we are connected to.
+    &#34;&#34;&#34;
+    return list(self.links.keys())</code></pre>
 </details>
 </dd>
 <dt id="mesh.node.Node.get_next_destination"><code class="name flex">
@@ -186,62 +511,222 @@ class Node:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_next_destination(self) -&gt; str:
+<pre><code class="python">def get_next_destination(self) -&gt; str or None:
     &#34;&#34;&#34;
     Returns the MAC address of the nexthop of the packet at the front of the queue.
     &#34;&#34;&#34;
-    pass</code></pre>
+    next_packet = self.queue[0][0]
+    packet_path = next_packet.get_path()
+    return packet_path[packet_path.index(self.mac_address) + 1]</code></pre>
 </details>
 </dd>
-<dt id="mesh.node.Node.receive_packet"><code class="name flex">
-<span>def <span class="ident">receive_packet</span></span>(<span>self, packet: <a title="mesh.packet.Packet" href="packet.html#mesh.packet.Packet">Packet</a>, timestep: int) ‑> None</span>
+<dt id="mesh.node.Node.get_packets_received"><code class="name flex">
+<span>def <span class="ident">get_packets_received</span></span>(<span>self) ‑> int</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Receives a packet and adds the packet to own queue.</p>
-<p>If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id.</p></div>
+<div class="desc"><p>Returns the number of packets that this node has received</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def receive_packet(self, packet: Packet, timestep: int) -&gt; None:
+<pre><code class="python">def get_packets_received(self) -&gt; int:
     &#34;&#34;&#34;
-    Receives a packet and adds the packet to own queue.
+    Returns the number of packets that this node has received
+    &#34;&#34;&#34;
+    return self.received_packets</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_position"><code class="name flex">
+<span>def <span class="ident">get_position</span></span>(<span>self) ‑> tuple[float, float]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the position of the node in (x, y) format</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_position(self) -&gt; tuple[float, float]:
+    &#34;&#34;&#34;
+    Returns the position of the node in (x, y) format
+    &#34;&#34;&#34;
+    return (self.x, self.y)</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_probability"><code class="name flex">
+<span>def <span class="ident">get_probability</span></span>(<span>self, neighbor: str) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return the probability that a transmission to a neighbor will succeed.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_probability(self, neighbor: str) -&gt; float:
+    &#34;&#34;&#34;
+    Return the probability that a transmission to a neighbor will succeed.
+    &#34;&#34;&#34;
+    if not neighbor in self.links:
+        return 0
 
-    If self is destination of packet, check if self sent packet with this packet id. If no, enqueue a response packet with same packet id. 
+    return self.links[neighbor].get_probability()</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_queue_state"><code class="name flex">
+<span>def <span class="ident">get_queue_state</span></span>(<span>self) ‑> list[<a title="mesh.packet.Packet" href="packet.html#mesh.packet.Packet">Packet</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns an ordered list of packets, representing self's current queue.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_queue_state(self) -&gt; list[Packet]:
     &#34;&#34;&#34;
-    pass</code></pre>
+    Returns an ordered list of packets, representing self&#39;s current queue.
+    &#34;&#34;&#34;
+    return [p[0] for p in self.queue]</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_received"><code class="name flex">
+<span>def <span class="ident">get_received</span></span>(<span>self) ‑> dict[str, str]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a dictionary of packets received by this node and their timesteps</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_received(self) -&gt; dict[str, str]:
+    &#34;&#34;&#34;
+    Return a dictionary of packets received by this node and their timesteps
+    &#34;&#34;&#34;
+    return {k: v for k, v in self.received.items()}</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_sent"><code class="name flex">
+<span>def <span class="ident">get_sent</span></span>(<span>self) ‑> dict[str, str]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Return a dictionary of packets sent by this node and their timesteps</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_sent(self) -&gt; dict[str, str]:
+    &#34;&#34;&#34;
+    Return a dictionary of packets sent by this node and their timesteps
+    &#34;&#34;&#34;
+    return {k: v for k, v in self.sent.items()}</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.get_transmit_distance"><code class="name flex">
+<span>def <span class="ident">get_transmit_distance</span></span>(<span>self) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the transmit distance of this node</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_transmit_distance(self) -&gt; float:
+    &#34;&#34;&#34;
+    Returns the transmit distance of this node
+    &#34;&#34;&#34;
+    return self.transmit_distance</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.in_range"><code class="name flex">
+<span>def <span class="ident">in_range</span></span>(<span>self, x: float, y: float) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Given an (x,y) coordinate, determines if that coordinate is within range of this node.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def in_range(self, x: float, y: float) -&gt; bool:
+    &#34;&#34;&#34;
+    Given an (x,y) coordinate, determines if that coordinate is within range of this node.
+    &#34;&#34;&#34;
+    return ((x - self.x) ** 2 + (y - self.y) ** 2) ** 0.5 &lt;= self.transmit_distance</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.is_linked"><code class="name flex">
+<span>def <span class="ident">is_linked</span></span>(<span>self, other: str) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Given the MAC address of another node, returns True iff there is a link between self and other.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_linked(self, other: str) -&gt; bool:
+    &#34;&#34;&#34;
+    Given the MAC address of another node, returns True iff there is a link between self and other.
+    &#34;&#34;&#34;
+    return other in self.links</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.learn_timestep"><code class="name flex">
+<span>def <span class="ident">learn_timestep</span></span>(<span>self, timestep: int) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Tells this node the timestep that the arena is currently on. Updates the queue if it should</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def learn_timestep(self, timestep: int) -&gt; None:
+    &#34;&#34;&#34;
+    Tells this node the timestep that the arena is currently on. Updates the queue if it should
+    &#34;&#34;&#34;
+    if timestep not in self.waiting_for_response:
+        return
+
+    response_packet = self.waiting_for_response.pop(timestep)
+    self.queue.append((response_packet, timestep))
+    return</code></pre>
+</details>
+</dd>
+<dt id="mesh.node.Node.packet_in_queue"><code class="name flex">
+<span>def <span class="ident">packet_in_queue</span></span>(<span>self) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns True iff there is a packet in the queue</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def packet_in_queue(self) -&gt; bool:
+    &#34;&#34;&#34;
+    Returns True iff there is a packet in the queue
+    &#34;&#34;&#34;
+    return len(self.queue) &gt; 0</code></pre>
 </details>
 </dd>
 <dt id="mesh.node.Node.send_from_queue"><code class="name flex">
-<span>def <span class="ident">send_from_queue</span></span>(<span>self, timestep: int) ‑> None</span>
+<span>def <span class="ident">send_from_queue</span></span>(<span>self, timestep: int, hidden_terminal: bool, override: bool) ‑> <a title="mesh.packet.Packet" href="packet.html#mesh.packet.Packet">Packet</a></span>
 </code></dt>
 <dd>
-<div class="desc"><p>Dequeues the next packet and sends the packet to its next hop.</p></div>
+<div class="desc"><p>Dequeues the next packet and sends the packet to its next hop. </p>
+<p>If override, packet will always complete except if it's a hidden terminal</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def send_from_queue(self, timestep: int) -&gt; None: 
+<pre><code class="python">def send_from_queue(self, timestep: int, hidden_terminal: bool, override: bool) -&gt; Packet:
     &#34;&#34;&#34;
     Dequeues the next packet and sends the packet to its next hop. 
+
+    If override, packet will always complete except if it&#39;s a hidden terminal
     &#34;&#34;&#34;
-    pass</code></pre>
-</details>
-</dd>
-<dt id="mesh.node.Node.set_path"><code class="name flex">
-<span>def <span class="ident">set_path</span></span>(<span>self, path: List[str]) ‑> None</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Sets the MAC address path from self to the supernode.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def set_path(self, path: typing.List[str]) -&gt; None:
-    &#34;&#34;&#34;
-    Sets the MAC address path from self to the supernode.
-    &#34;&#34;&#34;
-    pass</code></pre>
+    nexthop = self.get_next_destination()
+    packet = self.queue.pop(0)[0]
+    if hidden_terminal:
+        return packet
+    self.links[nexthop].transmit(
+        packet, self.mac_address, timestep, override)
+    return packet</code></pre>
 </details>
 </dd>
 </dl>
@@ -266,11 +751,22 @@ class Node:
 <h4><code><a title="mesh.node.Node" href="#mesh.node.Node">Node</a></code></h4>
 <ul class="">
 <li><code><a title="mesh.node.Node.add_link" href="#mesh.node.Node.add_link">add_link</a></code></li>
-<li><code><a title="mesh.node.Node.generate_packet" href="#mesh.node.Node.generate_packet">generate_packet</a></code></li>
+<li><code><a title="mesh.node.Node.enqueue_packet" href="#mesh.node.Node.enqueue_packet">enqueue_packet</a></code></li>
+<li><code><a title="mesh.node.Node.get_mac" href="#mesh.node.Node.get_mac">get_mac</a></code></li>
+<li><code><a title="mesh.node.Node.get_neighbors" href="#mesh.node.Node.get_neighbors">get_neighbors</a></code></li>
 <li><code><a title="mesh.node.Node.get_next_destination" href="#mesh.node.Node.get_next_destination">get_next_destination</a></code></li>
-<li><code><a title="mesh.node.Node.receive_packet" href="#mesh.node.Node.receive_packet">receive_packet</a></code></li>
+<li><code><a title="mesh.node.Node.get_packets_received" href="#mesh.node.Node.get_packets_received">get_packets_received</a></code></li>
+<li><code><a title="mesh.node.Node.get_position" href="#mesh.node.Node.get_position">get_position</a></code></li>
+<li><code><a title="mesh.node.Node.get_probability" href="#mesh.node.Node.get_probability">get_probability</a></code></li>
+<li><code><a title="mesh.node.Node.get_queue_state" href="#mesh.node.Node.get_queue_state">get_queue_state</a></code></li>
+<li><code><a title="mesh.node.Node.get_received" href="#mesh.node.Node.get_received">get_received</a></code></li>
+<li><code><a title="mesh.node.Node.get_sent" href="#mesh.node.Node.get_sent">get_sent</a></code></li>
+<li><code><a title="mesh.node.Node.get_transmit_distance" href="#mesh.node.Node.get_transmit_distance">get_transmit_distance</a></code></li>
+<li><code><a title="mesh.node.Node.in_range" href="#mesh.node.Node.in_range">in_range</a></code></li>
+<li><code><a title="mesh.node.Node.is_linked" href="#mesh.node.Node.is_linked">is_linked</a></code></li>
+<li><code><a title="mesh.node.Node.learn_timestep" href="#mesh.node.Node.learn_timestep">learn_timestep</a></code></li>
+<li><code><a title="mesh.node.Node.packet_in_queue" href="#mesh.node.Node.packet_in_queue">packet_in_queue</a></code></li>
 <li><code><a title="mesh.node.Node.send_from_queue" href="#mesh.node.Node.send_from_queue">send_from_queue</a></code></li>
-<li><code><a title="mesh.node.Node.set_path" href="#mesh.node.Node.set_path">set_path</a></code></li>
 </ul>
 </li>
 </ul>

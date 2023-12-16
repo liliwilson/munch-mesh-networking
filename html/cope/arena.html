@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>mesh.arena API documentation</title>
+<title>cope.arena API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,7 +19,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>mesh.arena</code></h1>
+<h1 class="title">Module <code>cope.arena</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -50,6 +50,7 @@ class Arena:
         data_rules = data[&#39;rules&#39;]
         hierarchies = data[&#39;hierarchies&#39;]
         response_wait_time: int = data[&#39;responseWaitTime&#39;]
+        packet_pool_expiration: int = float(&#39;inf&#39;)
 
         rules = {h: set() for h in hierarchies}
         for t1, t2 in data_rules:
@@ -71,7 +72,7 @@ class Arena:
                 x = node_obj[&#39;x&#39;]
                 y = node_obj[&#39;y&#39;]
                 node = Node(mac_addr, x, y, hierarchy,
-                            transmit_distance, response_wait_time)
+                            transmit_distance, response_wait_time, packet_pool_expiration)
 
                 for link_class in rules[hierarchy]:
                     # if linked to own class, check against current list of MACs
@@ -90,12 +91,15 @@ class Arena:
                         node_other.add_link(node)
 
                 list_of_macs.append(mac_addr)
+
                 self.node_dict[mac_addr] = node
 
             self.hierarchy_dict[hierarchy] = list_of_macs
 
         self.active_node_list: list[str] = list(self.node_dict.keys())
         self.timestep: int = 0
+        # memoize the list of best paths
+        self.best_paths: dict[tuple[str, str], list[str]] = {}
 
     def can_link(self, node1: str, node2: str) -&gt; bool:
         &#34;&#34;&#34;
@@ -110,9 +114,14 @@ class Arena:
         &#34;&#34;&#34;
         Initiates a packet send from a source node, to a given a destination node.
 
-        Discovers route using Dijkstra&#39;s, where weights are probability of successful transmission along a link.
+        Uses Dijkstra&#39;s to find ideal route from source to destination node.
         &#34;&#34;&#34;
         if src_node == dst_node:
+            return
+        if (src_node, dst_node) in self.best_paths:
+            best_path = self.best_paths[(src_node, dst_node)]
+            packet = Packet(is_two_way, best_path)
+            self.node_dict[src_node].initiate_send(packet, self.timestep)
             return
 
         probabilities = {node: 0 for node in self.node_dict.keys()}
@@ -145,8 +154,9 @@ class Arena:
             best_path.insert(0, current_node)
             current_node = predecessors[current_node]
 
+        self.best_paths[(src_node, dst_node)] = best_path
         packet = Packet(is_two_way, best_path)
-        self.node_dict[src_node].enqueue_packet(packet, self.timestep)
+        self.node_dict[src_node].initiate_send(packet, self.timestep)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1, probability_send: float = 0.01) -&gt; dict[str, float]:
         &#34;&#34;&#34;
@@ -172,10 +182,11 @@ class Arena:
 
             self.run()
 
-        while any(node.packet_in_queue() for node in self.node_dict.values()):
+        # while there are still packets in queues
+        while any(node.packet_in_queues() for node in self.node_dict.values()):
+            self.run()
             if self.timestep % 1 == 0:
                 print(self.timestep)
-            self.run()
 
         print(self.timestep)
 
@@ -184,6 +195,10 @@ class Arena:
         for node_mac, node in self.node_dict.items():
             sent = node.get_sent()
             received = node.get_received()
+            coded_packet_history = node.get_coded_packets_history()
+
+            coding_opps = len(
+                [entry for entry in coded_packet_history if len(entry[0]) &gt; 1])
 
             packet_drops, packet_successes = 0, 0
             latencies = []
@@ -199,6 +214,7 @@ class Arena:
                 &#39;throughput&#39;: packet_successes / timesteps,
                 &#39;drops&#39;: packet_drops,
                 &#39;average_latency&#39;: sum(latencies)/len(latencies) if len(latencies) &gt; 0 else float(&#39;inf&#39;),
+                &#39;coding_opps_taken&#39;: coding_opps,
                 &#39;timesteps&#39;: self.timestep
             }
 
@@ -214,8 +230,10 @@ class Arena:
 
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
-            node_queue = node_obj.get_queue_state()
-            if not node_queue:
+
+            if node_obj.get_next_destination() is None:
+                # checks if all queues are empty
+                node_obj.send_reception_report(self.timestep, override)
                 continue
 
             # check if medium is free by comparing to nodes in sending
@@ -238,7 +256,9 @@ class Arena:
 
         for sender in sending:
             dest = sender.get_next_destination()
-            sender.send_from_queue(
+            # if dest in ht:
+            #     print(&#39;hidden terminal&#39;)
+            sender.send_from_queues(
                 self.timestep, bool(dest in ht), override)
 
         for sender in sending:
@@ -248,6 +268,7 @@ class Arena:
         # this bit tells nodes whether they should create a response packet
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
+            node_obj.cleanup(self.timestep)
             node_obj.learn_timestep(self.timestep)
 
         self.timestep += 1
@@ -268,7 +289,7 @@ class Arena:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="mesh.arena.Arena"><code class="flex name class">
+<dt id="cope.arena.Arena"><code class="flex name class">
 <span>class <span class="ident">Arena</span></span>
 <span>(</span><span>filename: str)</span>
 </code></dt>
@@ -296,6 +317,7 @@ class Arena:
         data_rules = data[&#39;rules&#39;]
         hierarchies = data[&#39;hierarchies&#39;]
         response_wait_time: int = data[&#39;responseWaitTime&#39;]
+        packet_pool_expiration: int = float(&#39;inf&#39;)
 
         rules = {h: set() for h in hierarchies}
         for t1, t2 in data_rules:
@@ -317,7 +339,7 @@ class Arena:
                 x = node_obj[&#39;x&#39;]
                 y = node_obj[&#39;y&#39;]
                 node = Node(mac_addr, x, y, hierarchy,
-                            transmit_distance, response_wait_time)
+                            transmit_distance, response_wait_time, packet_pool_expiration)
 
                 for link_class in rules[hierarchy]:
                     # if linked to own class, check against current list of MACs
@@ -336,12 +358,15 @@ class Arena:
                         node_other.add_link(node)
 
                 list_of_macs.append(mac_addr)
+
                 self.node_dict[mac_addr] = node
 
             self.hierarchy_dict[hierarchy] = list_of_macs
 
         self.active_node_list: list[str] = list(self.node_dict.keys())
         self.timestep: int = 0
+        # memoize the list of best paths
+        self.best_paths: dict[tuple[str, str], list[str]] = {}
 
     def can_link(self, node1: str, node2: str) -&gt; bool:
         &#34;&#34;&#34;
@@ -356,9 +381,14 @@ class Arena:
         &#34;&#34;&#34;
         Initiates a packet send from a source node, to a given a destination node.
 
-        Discovers route using Dijkstra&#39;s, where weights are probability of successful transmission along a link.
+        Uses Dijkstra&#39;s to find ideal route from source to destination node.
         &#34;&#34;&#34;
         if src_node == dst_node:
+            return
+        if (src_node, dst_node) in self.best_paths:
+            best_path = self.best_paths[(src_node, dst_node)]
+            packet = Packet(is_two_way, best_path)
+            self.node_dict[src_node].initiate_send(packet, self.timestep)
             return
 
         probabilities = {node: 0 for node in self.node_dict.keys()}
@@ -391,8 +421,9 @@ class Arena:
             best_path.insert(0, current_node)
             current_node = predecessors[current_node]
 
+        self.best_paths[(src_node, dst_node)] = best_path
         packet = Packet(is_two_way, best_path)
-        self.node_dict[src_node].enqueue_packet(packet, self.timestep)
+        self.node_dict[src_node].initiate_send(packet, self.timestep)
 
     def simulate(self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1, probability_send: float = 0.01) -&gt; dict[str, float]:
         &#34;&#34;&#34;
@@ -418,10 +449,11 @@ class Arena:
 
             self.run()
 
-        while any(node.packet_in_queue() for node in self.node_dict.values()):
+        # while there are still packets in queues
+        while any(node.packet_in_queues() for node in self.node_dict.values()):
+            self.run()
             if self.timestep % 1 == 0:
                 print(self.timestep)
-            self.run()
 
         print(self.timestep)
 
@@ -430,6 +462,10 @@ class Arena:
         for node_mac, node in self.node_dict.items():
             sent = node.get_sent()
             received = node.get_received()
+            coded_packet_history = node.get_coded_packets_history()
+
+            coding_opps = len(
+                [entry for entry in coded_packet_history if len(entry[0]) &gt; 1])
 
             packet_drops, packet_successes = 0, 0
             latencies = []
@@ -445,6 +481,7 @@ class Arena:
                 &#39;throughput&#39;: packet_successes / timesteps,
                 &#39;drops&#39;: packet_drops,
                 &#39;average_latency&#39;: sum(latencies)/len(latencies) if len(latencies) &gt; 0 else float(&#39;inf&#39;),
+                &#39;coding_opps_taken&#39;: coding_opps,
                 &#39;timesteps&#39;: self.timestep
             }
 
@@ -460,8 +497,10 @@ class Arena:
 
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
-            node_queue = node_obj.get_queue_state()
-            if not node_queue:
+
+            if node_obj.get_next_destination() is None:
+                # checks if all queues are empty
+                node_obj.send_reception_report(self.timestep, override)
                 continue
 
             # check if medium is free by comparing to nodes in sending
@@ -484,7 +523,9 @@ class Arena:
 
         for sender in sending:
             dest = sender.get_next_destination()
-            sender.send_from_queue(
+            # if dest in ht:
+            #     print(&#39;hidden terminal&#39;)
+            sender.send_from_queues(
                 self.timestep, bool(dest in ht), override)
 
         for sender in sending:
@@ -494,6 +535,7 @@ class Arena:
         # this bit tells nodes whether they should create a response packet
         for node in self.active_node_list:
             node_obj = self.node_dict[node]
+            node_obj.cleanup(self.timestep)
             node_obj.learn_timestep(self.timestep)
 
         self.timestep += 1
@@ -506,7 +548,7 @@ class Arena:
 </details>
 <h3>Methods</h3>
 <dl>
-<dt id="mesh.arena.Arena.can_link"><code class="name flex">
+<dt id="cope.arena.Arena.can_link"><code class="name flex">
 <span>def <span class="ident">can_link</span></span>(<span>self, node1: str, node2: str) ‑> bool</span>
 </code></dt>
 <dd>
@@ -527,8 +569,8 @@ that, given their power capabilities, they can reach one another.</p></div>
     return self.node_dict[node1].is_linked(node2) and self.node_dict[node2].is_linked(node1)</code></pre>
 </details>
 </dd>
-<dt id="mesh.arena.Arena.get_nodes"><code class="name flex">
-<span>def <span class="ident">get_nodes</span></span>(<span>self) ‑> dict[str, <a title="mesh.node.Node" href="node.html#mesh.node.Node">Node</a>]</span>
+<dt id="cope.arena.Arena.get_nodes"><code class="name flex">
+<span>def <span class="ident">get_nodes</span></span>(<span>self) ‑> dict[str, <a title="cope.node.Node" href="node.html#cope.node.Node">Node</a>]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a dict mapping MAC addresses to node objects for all nodes in this arena</p></div>
@@ -543,7 +585,7 @@ that, given their power capabilities, they can reach one another.</p></div>
     return {k: v for k, v in self.node_dict.items()}</code></pre>
 </details>
 </dd>
-<dt id="mesh.arena.Arena.run"><code class="name flex">
+<dt id="cope.arena.Arena.run"><code class="name flex">
 <span>def <span class="ident">run</span></span>(<span>self, override=False) ‑> None</span>
 </code></dt>
 <dd>
@@ -562,8 +604,10 @@ that, given their power capabilities, they can reach one another.</p></div>
 
     for node in self.active_node_list:
         node_obj = self.node_dict[node]
-        node_queue = node_obj.get_queue_state()
-        if not node_queue:
+
+        if node_obj.get_next_destination() is None:
+            # checks if all queues are empty
+            node_obj.send_reception_report(self.timestep, override)
             continue
 
         # check if medium is free by comparing to nodes in sending
@@ -586,7 +630,9 @@ that, given their power capabilities, they can reach one another.</p></div>
 
     for sender in sending:
         dest = sender.get_next_destination()
-        sender.send_from_queue(
+        # if dest in ht:
+        #     print(&#39;hidden terminal&#39;)
+        sender.send_from_queues(
             self.timestep, bool(dest in ht), override)
 
     for sender in sending:
@@ -596,17 +642,18 @@ that, given their power capabilities, they can reach one another.</p></div>
     # this bit tells nodes whether they should create a response packet
     for node in self.active_node_list:
         node_obj = self.node_dict[node]
+        node_obj.cleanup(self.timestep)
         node_obj.learn_timestep(self.timestep)
 
     self.timestep += 1</code></pre>
 </details>
 </dd>
-<dt id="mesh.arena.Arena.send_packet"><code class="name flex">
+<dt id="cope.arena.Arena.send_packet"><code class="name flex">
 <span>def <span class="ident">send_packet</span></span>(<span>self, src_node: str, dst_node: str, is_two_way: bool = True) ‑> None</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Initiates a packet send from a source node, to a given a destination node.</p>
-<p>Discovers route using Dijkstra's, where weights are probability of successful transmission along a link.</p></div>
+<p>Uses Dijkstra's to find ideal route from source to destination node.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -615,9 +662,14 @@ that, given their power capabilities, they can reach one another.</p></div>
     &#34;&#34;&#34;
     Initiates a packet send from a source node, to a given a destination node.
 
-    Discovers route using Dijkstra&#39;s, where weights are probability of successful transmission along a link.
+    Uses Dijkstra&#39;s to find ideal route from source to destination node.
     &#34;&#34;&#34;
     if src_node == dst_node:
+        return
+    if (src_node, dst_node) in self.best_paths:
+        best_path = self.best_paths[(src_node, dst_node)]
+        packet = Packet(is_two_way, best_path)
+        self.node_dict[src_node].initiate_send(packet, self.timestep)
         return
 
     probabilities = {node: 0 for node in self.node_dict.keys()}
@@ -650,11 +702,12 @@ that, given their power capabilities, they can reach one another.</p></div>
         best_path.insert(0, current_node)
         current_node = predecessors[current_node]
 
+    self.best_paths[(src_node, dst_node)] = best_path
     packet = Packet(is_two_way, best_path)
-    self.node_dict[src_node].enqueue_packet(packet, self.timestep)</code></pre>
+    self.node_dict[src_node].initiate_send(packet, self.timestep)</code></pre>
 </details>
 </dd>
-<dt id="mesh.arena.Arena.simulate"><code class="name flex">
+<dt id="cope.arena.Arena.simulate"><code class="name flex">
 <span>def <span class="ident">simulate</span></span>(<span>self, timesteps: int, end_user_hierarchy_class: str, internet_enabled_hierarchy_class: str, min_stream_size: int = 1, max_stream_size: int = 1, probability_send: float = 0.01) ‑> dict[str, float]</span>
 </code></dt>
 <dd>
@@ -688,10 +741,11 @@ that, given their power capabilities, they can reach one another.</p></div>
 
         self.run()
 
-    while any(node.packet_in_queue() for node in self.node_dict.values()):
+    # while there are still packets in queues
+    while any(node.packet_in_queues() for node in self.node_dict.values()):
+        self.run()
         if self.timestep % 1 == 0:
             print(self.timestep)
-        self.run()
 
     print(self.timestep)
 
@@ -700,6 +754,10 @@ that, given their power capabilities, they can reach one another.</p></div>
     for node_mac, node in self.node_dict.items():
         sent = node.get_sent()
         received = node.get_received()
+        coded_packet_history = node.get_coded_packets_history()
+
+        coding_opps = len(
+            [entry for entry in coded_packet_history if len(entry[0]) &gt; 1])
 
         packet_drops, packet_successes = 0, 0
         latencies = []
@@ -715,6 +773,7 @@ that, given their power capabilities, they can reach one another.</p></div>
             &#39;throughput&#39;: packet_successes / timesteps,
             &#39;drops&#39;: packet_drops,
             &#39;average_latency&#39;: sum(latencies)/len(latencies) if len(latencies) &gt; 0 else float(&#39;inf&#39;),
+            &#39;coding_opps_taken&#39;: coding_opps,
             &#39;timesteps&#39;: self.timestep
         }
 
@@ -734,19 +793,19 @@ that, given their power capabilities, they can reach one another.</p></div>
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="mesh" href="index.html">mesh</a></code></li>
+<li><code><a title="cope" href="index.html">cope</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="mesh.arena.Arena" href="#mesh.arena.Arena">Arena</a></code></h4>
+<h4><code><a title="cope.arena.Arena" href="#cope.arena.Arena">Arena</a></code></h4>
 <ul class="">
-<li><code><a title="mesh.arena.Arena.can_link" href="#mesh.arena.Arena.can_link">can_link</a></code></li>
-<li><code><a title="mesh.arena.Arena.get_nodes" href="#mesh.arena.Arena.get_nodes">get_nodes</a></code></li>
-<li><code><a title="mesh.arena.Arena.run" href="#mesh.arena.Arena.run">run</a></code></li>
-<li><code><a title="mesh.arena.Arena.send_packet" href="#mesh.arena.Arena.send_packet">send_packet</a></code></li>
-<li><code><a title="mesh.arena.Arena.simulate" href="#mesh.arena.Arena.simulate">simulate</a></code></li>
+<li><code><a title="cope.arena.Arena.can_link" href="#cope.arena.Arena.can_link">can_link</a></code></li>
+<li><code><a title="cope.arena.Arena.get_nodes" href="#cope.arena.Arena.get_nodes">get_nodes</a></code></li>
+<li><code><a title="cope.arena.Arena.run" href="#cope.arena.Arena.run">run</a></code></li>
+<li><code><a title="cope.arena.Arena.send_packet" href="#cope.arena.Arena.send_packet">send_packet</a></code></li>
+<li><code><a title="cope.arena.Arena.simulate" href="#cope.arena.Arena.simulate">simulate</a></code></li>
 </ul>
 </li>
 </ul>

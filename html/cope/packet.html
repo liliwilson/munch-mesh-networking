@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>mesh.packet API documentation</title>
+<title>cope.packet API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,7 +19,7 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>mesh.packet</code></h1>
+<h1 class="title">Module <code>cope.packet</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
@@ -27,6 +27,7 @@
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">from typing import Any
+
 
 class Packet:
     num_packets = 0
@@ -36,16 +37,15 @@ class Packet:
         Creates a packet given a path to the destination MAC address and a packet size in bytes.
 
         Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.
-
-        If no packet id supplied, sets to be the next packet id.
         &#34;&#34;&#34;
-        self.is_request = is_request
-        self.path_to_dst = path_to_dst[:]
-        if packet_id is not None:
-            self.packet_id = packet_id
-        else:
+        if packet_id is None:
             self.packet_id = Packet.num_packets
             Packet.num_packets += 1
+        else:
+            self.packet_id = packet_id
+
+        self.is_request = is_request
+        self.path_to_dst: list[str] = path_to_dst
 
     def get_path(self) -&gt; list[str]:
         &#34;&#34;&#34;
@@ -84,7 +84,56 @@ class Packet:
             return False
         if not self.path_to_dst == other.path_to_dst:
             return False
-        return True</code></pre>
+        return True
+
+    def __repr__(self) -&gt; str:
+        &#34;&#34;&#34;
+        your mom 
+        &#34;&#34;&#34;
+        return f&#39;({self.packet_id}, {self.is_request}, {self.path_to_dst})&#39;
+
+class ReceptionReport:
+
+    def __init__(self, stored_packets: set[tuple[int, bool]], node: str):
+        &#34;&#34;&#34;
+        Create a reception report for a given node, given a list of packet IDs it has stored.
+        &#34;&#34;&#34;
+        self.stored_packets = stored_packets
+        self.node = node
+
+    def get_node(self) -&gt; str:
+        &#34;&#34;&#34;
+        Gets the source of this reception packet
+        &#34;&#34;&#34;
+        return self.node
+
+    def get_packets(self) -&gt; set[tuple[int, bool]]:
+        &#34;&#34;&#34;
+        Gets the packets that are self.get_node() is confirmed to have
+        &#34;&#34;&#34;
+        return self.stored_packets
+
+
+class COPEPacket:
+
+    def __init__(self, packets: list[Packet], reception_report: ReceptionReport):
+        &#34;&#34;&#34;
+        Creates a COPE packet, which encodes together a list of given packets and attaches a given reception report containing stored packet IDs for a node.
+        &#34;&#34;&#34;
+        self.packets = packets
+        self.reception_report = reception_report
+
+    def get_packets(self) -&gt; list[Packet]:
+        &#34;&#34;&#34;
+        Returns the list of packets in the COPEPacket
+        &#34;&#34;&#34;
+        return self.packets
+
+    def get_reception_report(self) -&gt; ReceptionReport:
+        &#34;&#34;&#34;
+        Returns the reception report in this COPEPacket
+        &#34;&#34;&#34;
+        return self.reception_report</code></pre>
 </details>
 </section>
 <section>
@@ -96,14 +145,80 @@ class Packet:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="mesh.packet.Packet"><code class="flex name class">
+<dt id="cope.packet.COPEPacket"><code class="flex name class">
+<span>class <span class="ident">COPEPacket</span></span>
+<span>(</span><span>packets: list[<a title="cope.packet.Packet" href="#cope.packet.Packet">Packet</a>], reception_report: <a title="cope.packet.ReceptionReport" href="#cope.packet.ReceptionReport">ReceptionReport</a>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Creates a COPE packet, which encodes together a list of given packets and attaches a given reception report containing stored packet IDs for a node.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class COPEPacket:
+
+    def __init__(self, packets: list[Packet], reception_report: ReceptionReport):
+        &#34;&#34;&#34;
+        Creates a COPE packet, which encodes together a list of given packets and attaches a given reception report containing stored packet IDs for a node.
+        &#34;&#34;&#34;
+        self.packets = packets
+        self.reception_report = reception_report
+
+    def get_packets(self) -&gt; list[Packet]:
+        &#34;&#34;&#34;
+        Returns the list of packets in the COPEPacket
+        &#34;&#34;&#34;
+        return self.packets
+
+    def get_reception_report(self) -&gt; ReceptionReport:
+        &#34;&#34;&#34;
+        Returns the reception report in this COPEPacket
+        &#34;&#34;&#34;
+        return self.reception_report</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="cope.packet.COPEPacket.get_packets"><code class="name flex">
+<span>def <span class="ident">get_packets</span></span>(<span>self) ‑> list[<a title="cope.packet.Packet" href="#cope.packet.Packet">Packet</a>]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the list of packets in the COPEPacket</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_packets(self) -&gt; list[Packet]:
+    &#34;&#34;&#34;
+    Returns the list of packets in the COPEPacket
+    &#34;&#34;&#34;
+    return self.packets</code></pre>
+</details>
+</dd>
+<dt id="cope.packet.COPEPacket.get_reception_report"><code class="name flex">
+<span>def <span class="ident">get_reception_report</span></span>(<span>self) ‑> <a title="cope.packet.ReceptionReport" href="#cope.packet.ReceptionReport">ReceptionReport</a></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Returns the reception report in this COPEPacket</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_reception_report(self) -&gt; ReceptionReport:
+    &#34;&#34;&#34;
+    Returns the reception report in this COPEPacket
+    &#34;&#34;&#34;
+    return self.reception_report</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="cope.packet.Packet"><code class="flex name class">
 <span>class <span class="ident">Packet</span></span>
 <span>(</span><span>is_request: bool, path_to_dst: list[str], packet_id: int = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Creates a packet given a path to the destination MAC address and a packet size in bytes.</p>
-<p>Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.</p>
-<p>If no packet id supplied, sets to be the next packet id.</p></div>
+<p>Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -116,16 +231,15 @@ class Packet:
         Creates a packet given a path to the destination MAC address and a packet size in bytes.
 
         Each packet also has packet_id, and notes whether it is a request for the destination or a response from the destination.
-
-        If no packet id supplied, sets to be the next packet id.
         &#34;&#34;&#34;
-        self.is_request = is_request
-        self.path_to_dst = path_to_dst[:]
-        if packet_id is not None:
-            self.packet_id = packet_id
-        else:
+        if packet_id is None:
             self.packet_id = Packet.num_packets
             Packet.num_packets += 1
+        else:
+            self.packet_id = packet_id
+
+        self.is_request = is_request
+        self.path_to_dst: list[str] = path_to_dst
 
     def get_path(self) -&gt; list[str]:
         &#34;&#34;&#34;
@@ -164,18 +278,24 @@ class Packet:
             return False
         if not self.path_to_dst == other.path_to_dst:
             return False
-        return True</code></pre>
+        return True
+
+    def __repr__(self) -&gt; str:
+        &#34;&#34;&#34;
+        your mom 
+        &#34;&#34;&#34;
+        return f&#39;({self.packet_id}, {self.is_request}, {self.path_to_dst})&#39;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="mesh.packet.Packet.num_packets"><code class="name">var <span class="ident">num_packets</span></code></dt>
+<dt id="cope.packet.Packet.num_packets"><code class="name">var <span class="ident">num_packets</span></code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="mesh.packet.Packet.get_id"><code class="name flex">
+<dt id="cope.packet.Packet.get_id"><code class="name flex">
 <span>def <span class="ident">get_id</span></span>(<span>self) ‑> int</span>
 </code></dt>
 <dd>
@@ -191,7 +311,7 @@ class Packet:
     return self.packet_id</code></pre>
 </details>
 </dd>
-<dt id="mesh.packet.Packet.get_is_request"><code class="name flex">
+<dt id="cope.packet.Packet.get_is_request"><code class="name flex">
 <span>def <span class="ident">get_is_request</span></span>(<span>self) ‑> bool</span>
 </code></dt>
 <dd>
@@ -207,7 +327,7 @@ class Packet:
     return self.is_request</code></pre>
 </details>
 </dd>
-<dt id="mesh.packet.Packet.get_path"><code class="name flex">
+<dt id="cope.packet.Packet.get_path"><code class="name flex">
 <span>def <span class="ident">get_path</span></span>(<span>self) ‑> list[str]</span>
 </code></dt>
 <dd>
@@ -223,8 +343,8 @@ class Packet:
     return self.path_to_dst[:]</code></pre>
 </details>
 </dd>
-<dt id="mesh.packet.Packet.get_reverse"><code class="name flex">
-<span>def <span class="ident">get_reverse</span></span>(<span>self) ‑> <a title="mesh.packet.Packet" href="#mesh.packet.Packet">Packet</a></span>
+<dt id="cope.packet.Packet.get_reverse"><code class="name flex">
+<span>def <span class="ident">get_reverse</span></span>(<span>self) ‑> <a title="cope.packet.Packet" href="#cope.packet.Packet">Packet</a></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Returns a packet that is response of this packet.</p></div>
@@ -242,6 +362,73 @@ class Packet:
 </dd>
 </dl>
 </dd>
+<dt id="cope.packet.ReceptionReport"><code class="flex name class">
+<span>class <span class="ident">ReceptionReport</span></span>
+<span>(</span><span>stored_packets: set[tuple[int, bool]], node: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a reception report for a given node, given a list of packet IDs it has stored.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ReceptionReport:
+
+    def __init__(self, stored_packets: set[tuple[int, bool]], node: str):
+        &#34;&#34;&#34;
+        Create a reception report for a given node, given a list of packet IDs it has stored.
+        &#34;&#34;&#34;
+        self.stored_packets = stored_packets
+        self.node = node
+
+    def get_node(self) -&gt; str:
+        &#34;&#34;&#34;
+        Gets the source of this reception packet
+        &#34;&#34;&#34;
+        return self.node
+
+    def get_packets(self) -&gt; set[tuple[int, bool]]:
+        &#34;&#34;&#34;
+        Gets the packets that are self.get_node() is confirmed to have
+        &#34;&#34;&#34;
+        return self.stored_packets</code></pre>
+</details>
+<h3>Methods</h3>
+<dl>
+<dt id="cope.packet.ReceptionReport.get_node"><code class="name flex">
+<span>def <span class="ident">get_node</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Gets the source of this reception packet</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_node(self) -&gt; str:
+    &#34;&#34;&#34;
+    Gets the source of this reception packet
+    &#34;&#34;&#34;
+    return self.node</code></pre>
+</details>
+</dd>
+<dt id="cope.packet.ReceptionReport.get_packets"><code class="name flex">
+<span>def <span class="ident">get_packets</span></span>(<span>self) ‑> set[tuple[int, bool]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Gets the packets that are self.get_node() is confirmed to have</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_packets(self) -&gt; set[tuple[int, bool]]:
+    &#34;&#34;&#34;
+    Gets the packets that are self.get_node() is confirmed to have
+    &#34;&#34;&#34;
+    return self.stored_packets</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
 </dl>
 </section>
 </article>
@@ -253,19 +440,33 @@ class Packet:
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="mesh" href="index.html">mesh</a></code></li>
+<li><code><a title="cope" href="index.html">cope</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="mesh.packet.Packet" href="#mesh.packet.Packet">Packet</a></code></h4>
+<h4><code><a title="cope.packet.COPEPacket" href="#cope.packet.COPEPacket">COPEPacket</a></code></h4>
 <ul class="">
-<li><code><a title="mesh.packet.Packet.get_id" href="#mesh.packet.Packet.get_id">get_id</a></code></li>
-<li><code><a title="mesh.packet.Packet.get_is_request" href="#mesh.packet.Packet.get_is_request">get_is_request</a></code></li>
-<li><code><a title="mesh.packet.Packet.get_path" href="#mesh.packet.Packet.get_path">get_path</a></code></li>
-<li><code><a title="mesh.packet.Packet.get_reverse" href="#mesh.packet.Packet.get_reverse">get_reverse</a></code></li>
-<li><code><a title="mesh.packet.Packet.num_packets" href="#mesh.packet.Packet.num_packets">num_packets</a></code></li>
+<li><code><a title="cope.packet.COPEPacket.get_packets" href="#cope.packet.COPEPacket.get_packets">get_packets</a></code></li>
+<li><code><a title="cope.packet.COPEPacket.get_reception_report" href="#cope.packet.COPEPacket.get_reception_report">get_reception_report</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="cope.packet.Packet" href="#cope.packet.Packet">Packet</a></code></h4>
+<ul class="">
+<li><code><a title="cope.packet.Packet.get_id" href="#cope.packet.Packet.get_id">get_id</a></code></li>
+<li><code><a title="cope.packet.Packet.get_is_request" href="#cope.packet.Packet.get_is_request">get_is_request</a></code></li>
+<li><code><a title="cope.packet.Packet.get_path" href="#cope.packet.Packet.get_path">get_path</a></code></li>
+<li><code><a title="cope.packet.Packet.get_reverse" href="#cope.packet.Packet.get_reverse">get_reverse</a></code></li>
+<li><code><a title="cope.packet.Packet.num_packets" href="#cope.packet.Packet.num_packets">num_packets</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="cope.packet.ReceptionReport" href="#cope.packet.ReceptionReport">ReceptionReport</a></code></h4>
+<ul class="">
+<li><code><a title="cope.packet.ReceptionReport.get_node" href="#cope.packet.ReceptionReport.get_node">get_node</a></code></li>
+<li><code><a title="cope.packet.ReceptionReport.get_packets" href="#cope.packet.ReceptionReport.get_packets">get_packets</a></code></li>
 </ul>
 </li>
 </ul>

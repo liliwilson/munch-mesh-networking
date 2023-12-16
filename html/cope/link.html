@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.10.0" />
-<title>mesh.link API documentation</title>
+<title>cope.link API documentation</title>
 <meta name="description" content="" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
@@ -19,31 +19,53 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>mesh.link</code></h1>
+<h1 class="title">Module <code>cope.link</code></h1>
 </header>
 <section id="section-intro">
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import typing
+<pre><code class="python">from typing import Any
 import random
-from .packet import Packet
+from .packet import COPEPacket, ReceptionReport
+
 
 class Link:
 
-    def __init__(self, node1: typing.Any, node2: typing.Any) -&gt; None:
+    def __init__(self, node1: Any, node2: Any) -&gt; None:
         &#34;&#34;&#34;
         Creates a link object between node1 and node2. 
         &#34;&#34;&#34;
         self.node1 = node1
         self.node2 = node2
 
-    def transmit(self, packet: Packet, source: str, timestep: int, override: bool) -&gt; bool:
+    def transmit(self, packet: COPEPacket, source: str, timestep: int, override: bool) -&gt; bool:
         &#34;&#34;&#34;
         Given a packet and a source MAC address, returns True iff the destination node receives the packet.
 
-        Determined based on distance between nodes and strengths of the nodes.
+        Determined based on distance between nodes and strengths of the nodes. 
+        &#34;&#34;&#34;
+        success = random.random() &lt; self.get_probability()
+        if override:
+            success = True
+        if not success:
+            # print(&#39;link drop&#39;)
+            return success
+        elif source == self.node1.get_mac():
+            self.node2.receive_cope_packet(packet, timestep)
+        elif source == self.node2.get_mac():
+            self.node1.receive_cope_packet(packet, timestep)
+        else:
+            raise ValueError(
+                &#34;node must be connected to link to transmit over it&#34;)
+        return success
+
+    def transmit_reception_report(self, report: ReceptionReport, source: str, timestep: int, override: bool) -&gt; bool:
+        &#34;&#34;&#34;
+        Given a reception report and a source MAC address, returns True iff the destination node receives the report.
+
+        Determined based on distance between nodes and strengths of the nodes. 
         &#34;&#34;&#34;
         success = random.random() &lt; self.get_probability()
         if override:
@@ -51,11 +73,12 @@ class Link:
         if not success:
             return success
         elif source == self.node1.get_mac():
-            self.node2.enqueue_packet(packet, timestep)
+            self.node2.receive_reception_report(report)
         elif source == self.node2.get_mac():
-            self.node1.enqueue_packet(packet, timestep) 
-        else: 
-            raise ValueError(&#34;node must be connected to link to transmit over it&#34;)
+            self.node1.receive_reception_report(report)
+        else:
+            raise ValueError(
+                &#34;node must be connected to link to transmit over it&#34;)
         return success
 
     def get_probability(self) -&gt; float:
@@ -80,7 +103,7 @@ class Link:
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="mesh.link.Link"><code class="flex name class">
+<dt id="cope.link.Link"><code class="flex name class">
 <span>class <span class="ident">Link</span></span>
 <span>(</span><span>node1: Any, node2: Any)</span>
 </code></dt>
@@ -92,18 +115,39 @@ class Link:
 </summary>
 <pre><code class="python">class Link:
 
-    def __init__(self, node1: typing.Any, node2: typing.Any) -&gt; None:
+    def __init__(self, node1: Any, node2: Any) -&gt; None:
         &#34;&#34;&#34;
         Creates a link object between node1 and node2. 
         &#34;&#34;&#34;
         self.node1 = node1
         self.node2 = node2
 
-    def transmit(self, packet: Packet, source: str, timestep: int, override: bool) -&gt; bool:
+    def transmit(self, packet: COPEPacket, source: str, timestep: int, override: bool) -&gt; bool:
         &#34;&#34;&#34;
         Given a packet and a source MAC address, returns True iff the destination node receives the packet.
 
-        Determined based on distance between nodes and strengths of the nodes.
+        Determined based on distance between nodes and strengths of the nodes. 
+        &#34;&#34;&#34;
+        success = random.random() &lt; self.get_probability()
+        if override:
+            success = True
+        if not success:
+            # print(&#39;link drop&#39;)
+            return success
+        elif source == self.node1.get_mac():
+            self.node2.receive_cope_packet(packet, timestep)
+        elif source == self.node2.get_mac():
+            self.node1.receive_cope_packet(packet, timestep)
+        else:
+            raise ValueError(
+                &#34;node must be connected to link to transmit over it&#34;)
+        return success
+
+    def transmit_reception_report(self, report: ReceptionReport, source: str, timestep: int, override: bool) -&gt; bool:
+        &#34;&#34;&#34;
+        Given a reception report and a source MAC address, returns True iff the destination node receives the report.
+
+        Determined based on distance between nodes and strengths of the nodes. 
         &#34;&#34;&#34;
         success = random.random() &lt; self.get_probability()
         if override:
@@ -111,11 +155,12 @@ class Link:
         if not success:
             return success
         elif source == self.node1.get_mac():
-            self.node2.enqueue_packet(packet, timestep)
+            self.node2.receive_reception_report(report)
         elif source == self.node2.get_mac():
-            self.node1.enqueue_packet(packet, timestep) 
-        else: 
-            raise ValueError(&#34;node must be connected to link to transmit over it&#34;)
+            self.node1.receive_reception_report(report)
+        else:
+            raise ValueError(
+                &#34;node must be connected to link to transmit over it&#34;)
         return success
 
     def get_probability(self) -&gt; float:
@@ -132,7 +177,7 @@ class Link:
 </details>
 <h3>Methods</h3>
 <dl>
-<dt id="mesh.link.Link.get_probability"><code class="name flex">
+<dt id="cope.link.Link.get_probability"><code class="name flex">
 <span>def <span class="ident">get_probability</span></span>(<span>self) ‑> float</span>
 </code></dt>
 <dd>
@@ -154,8 +199,8 @@ class Link:
     return max(1 - 0.8 * actual / transmit_range, 0)</code></pre>
 </details>
 </dd>
-<dt id="mesh.link.Link.transmit"><code class="name flex">
-<span>def <span class="ident">transmit</span></span>(<span>self, packet: <a title="mesh.packet.Packet" href="packet.html#mesh.packet.Packet">Packet</a>, source: str, timestep: int, override: bool) ‑> bool</span>
+<dt id="cope.link.Link.transmit"><code class="name flex">
+<span>def <span class="ident">transmit</span></span>(<span>self, packet: <a title="cope.packet.COPEPacket" href="packet.html#cope.packet.COPEPacket">COPEPacket</a>, source: str, timestep: int, override: bool) ‑> bool</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Given a packet and a source MAC address, returns True iff the destination node receives the packet.</p>
@@ -164,11 +209,43 @@ class Link:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def transmit(self, packet: Packet, source: str, timestep: int, override: bool) -&gt; bool:
+<pre><code class="python">def transmit(self, packet: COPEPacket, source: str, timestep: int, override: bool) -&gt; bool:
     &#34;&#34;&#34;
     Given a packet and a source MAC address, returns True iff the destination node receives the packet.
 
-    Determined based on distance between nodes and strengths of the nodes.
+    Determined based on distance between nodes and strengths of the nodes. 
+    &#34;&#34;&#34;
+    success = random.random() &lt; self.get_probability()
+    if override:
+        success = True
+    if not success:
+        # print(&#39;link drop&#39;)
+        return success
+    elif source == self.node1.get_mac():
+        self.node2.receive_cope_packet(packet, timestep)
+    elif source == self.node2.get_mac():
+        self.node1.receive_cope_packet(packet, timestep)
+    else:
+        raise ValueError(
+            &#34;node must be connected to link to transmit over it&#34;)
+    return success</code></pre>
+</details>
+</dd>
+<dt id="cope.link.Link.transmit_reception_report"><code class="name flex">
+<span>def <span class="ident">transmit_reception_report</span></span>(<span>self, report: <a title="cope.packet.ReceptionReport" href="packet.html#cope.packet.ReceptionReport">ReceptionReport</a>, source: str, timestep: int, override: bool) ‑> bool</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Given a reception report and a source MAC address, returns True iff the destination node receives the report.</p>
+<p>Determined based on distance between nodes and strengths of the nodes.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transmit_reception_report(self, report: ReceptionReport, source: str, timestep: int, override: bool) -&gt; bool:
+    &#34;&#34;&#34;
+    Given a reception report and a source MAC address, returns True iff the destination node receives the report.
+
+    Determined based on distance between nodes and strengths of the nodes. 
     &#34;&#34;&#34;
     success = random.random() &lt; self.get_probability()
     if override:
@@ -176,11 +253,12 @@ class Link:
     if not success:
         return success
     elif source == self.node1.get_mac():
-        self.node2.enqueue_packet(packet, timestep)
+        self.node2.receive_reception_report(report)
     elif source == self.node2.get_mac():
-        self.node1.enqueue_packet(packet, timestep) 
-    else: 
-        raise ValueError(&#34;node must be connected to link to transmit over it&#34;)
+        self.node1.receive_reception_report(report)
+    else:
+        raise ValueError(
+            &#34;node must be connected to link to transmit over it&#34;)
     return success</code></pre>
 </details>
 </dd>
@@ -197,16 +275,17 @@ class Link:
 <ul id="index">
 <li><h3>Super-module</h3>
 <ul>
-<li><code><a title="mesh" href="index.html">mesh</a></code></li>
+<li><code><a title="cope" href="index.html">cope</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="mesh.link.Link" href="#mesh.link.Link">Link</a></code></h4>
+<h4><code><a title="cope.link.Link" href="#cope.link.Link">Link</a></code></h4>
 <ul class="">
-<li><code><a title="mesh.link.Link.get_probability" href="#mesh.link.Link.get_probability">get_probability</a></code></li>
-<li><code><a title="mesh.link.Link.transmit" href="#mesh.link.Link.transmit">transmit</a></code></li>
+<li><code><a title="cope.link.Link.get_probability" href="#cope.link.Link.get_probability">get_probability</a></code></li>
+<li><code><a title="cope.link.Link.transmit" href="#cope.link.Link.transmit">transmit</a></code></li>
+<li><code><a title="cope.link.Link.transmit_reception_report" href="#cope.link.Link.transmit_reception_report">transmit_reception_report</a></code></li>
 </ul>
 </li>
 </ul>
