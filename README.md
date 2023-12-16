@@ -24,7 +24,9 @@ In addition to providing an implementation of MUNCH, this repository contains co
 
 
 ## Project structure
-The [`cope`](./cope) and [`mesh`](./mesh) directories contain the simulation structure for MUNCH and normal wireless mesh networks respectively. A simulation is managed by an instance of the Arena class, which handles initializing a topology from a JSON file, managing network traffic flows, stepping through timesteps in a simulation, and gathering metrics. The high level arena workflow for each network type can be found in `{network}/docs/{network}_arena_workflow.md`. To explore the full documentation for each network type, you can find the mesh network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/mesh) and COPE network coding network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/cope).
+The [`cope`](./cope) and [`mesh`](./mesh) directories contain the simulation structure for MUNCH and normal wireless mesh networks respectively. A simulation is managed by an instance of the Arena class, which handles initializing a topology from a JSON file, managing network traffic flows, stepping through timesteps in a simulation, and gathering metrics. The high level arena workflow for each network type can be found in `{network}/docs/{network}_arena_workflow.md`. 
+
+To explore the full documentation for each network type, you can find the mesh network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/mesh) and COPE network coding network docs [here](https://liliwilson.github.io/munch-mesh-networking/html/cope).
 
 The [`test_cope`](./test_cope) and [`test_mesh`](./test_mesh) directories contain test cases and test topology that were used to verify that the simulators were working as expected. You can find all of the test cases within `tests.py` and the test arenas in the `test_arenas` subdirectory of each testing folder.
 
